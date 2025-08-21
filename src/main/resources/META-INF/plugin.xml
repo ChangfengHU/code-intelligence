@@ -1,0 +1,99 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.vyibc.code-assistant</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
+    <name>Code Assistant</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://www.vyibc.com">VYIBC</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
+    <description><![CDATA[
+        代码助手插件，提供代码翻译和解释功能<br>
+        <em>Code Assistant Plugin with Translation and Explanation features</em>
+    ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 设置页面 -->
+        <applicationConfigurable 
+            parentId="tools" 
+            instance="com.vyibc.codeassistant.settings.CodeAssistantConfigurable" 
+            id="com.vyibc.codeassistant.settings" 
+            displayName="Code Assistant"/>
+            
+        <!-- 服务注册 -->
+        <applicationService 
+            serviceImplementation="com.vyibc.codeassistant.settings.CodeAssistantSettings"/>
+    </extensions>
+    
+    <!-- Actions -->
+    <actions>
+        <!-- 代码翻译组 -->
+        <group id="CodeTranslationGroup" text="代码翻译" popup="true">
+            <action id="DirectTranslateAction" 
+                    class="com.vyibc.codeassistant.actions.DirectTranslateAction" 
+                    text="直接翻译" 
+                    description="显示翻译结果对话框">
+            </action>
+            <action id="FullReplaceAction" 
+                    class="com.vyibc.codeassistant.actions.FullReplaceAction" 
+                    text="全文替换" 
+                    description="将选中文本替换为翻译结果">
+            </action>
+            <action id="LineByLineReplaceAction" 
+                    class="com.vyibc.codeassistant.actions.LineByLineReplaceAction" 
+                    text="逐行插入" 
+                    description="在原文行下方插入翻译行">
+            </action>
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </group>
+        
+        <!-- 代码发音组 -->
+        <group id="CodePronunciationGroup" text="代码发音" popup="true">
+            <action id="EnglishPronunciationAction" 
+                    class="com.vyibc.codeassistant.actions.EnglishPronunciationAction" 
+                    text="英语发音" 
+                    description="对选中的英文文本进行发音">
+            </action>
+            <action id="ChinesePronunciationAction" 
+                    class="com.vyibc.codeassistant.actions.ChinesePronunciationAction" 
+                    text="中文发音" 
+                    description="将选中英文翻译成中文并发音">
+            </action>
+            <action id="EnglishChinesePronunciationAction" 
+                    class="com.vyibc.codeassistant.actions.EnglishChinesePronunciationAction" 
+                    text="英中对照发音" 
+                    description="先发音英文，再发音中文翻译">
+            </action>
+            <action id="PhoneticInsertionAction" 
+                    class="com.vyibc.codeassistant.actions.PhoneticInsertionAction" 
+                    text="音标插入" 
+                    description="在代码下方插入英文音标">
+            </action>
+            <action id="PronunciationAssistAction" 
+                    class="com.vyibc.codeassistant.actions.PronunciationAssistAction" 
+                    text="发音辅助" 
+                    description="插入中文谐音辅助发音">
+            </action>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodeTranslationGroup"/>
+        </group>
+        
+        <!-- 代码解释 -->
+        <action id="CodeExplanationAction" 
+                class="com.vyibc.codeassistant.actions.CodeExplanationAction" 
+                text="代码解释" 
+                description="使用AI翻译代码中的注释和字符串">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodePronunciationGroup"/>
+        </action>
+    </actions>
+</idea-plugin>
