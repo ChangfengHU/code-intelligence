@@ -7,12 +7,10 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import com.vyibc.codeassistant.services.AICodeTranslationService
-import com.vyibc.codeassistant.services.CodeStructureBatchProcessor
+import com.vyibc.codeassistant.services.AIDeepAnalysisService
 import com.vyibc.codeassistant.services.ProgressService
-import kotlin.math.ceil
 
-class CodeExplanationAction : AnAction("代码解释") {
+class DeepCodeExplanationAction : AnAction("深度解释") {
     
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
@@ -20,52 +18,52 @@ class CodeExplanationAction : AnAction("代码解释") {
         val selectedText = getSelectedText(editor) ?: return
         
         val progressService = ProgressService()
-        val aiService = AICodeTranslationService()
+        val aiService = AIDeepAnalysisService()
         
         val lines = selectedText.split("\n")
         val lineCount = lines.size
         
         if (lineCount <= 200) {
-            // 简单处理：直接翻译
-            handleSimpleTranslation(project, editor, selectedText, progressService, aiService)
+            // 简单处理：直接深度分析
+            handleSimpleDeepAnalysis(project, editor, selectedText, progressService, aiService)
         } else {
             // 检查是否包含多个类定义
             val classCount = countClasses(selectedText)
             if (classCount > 1) {
                 // 按类分批处理
-                handleClassBasedTranslation(project, editor, selectedText, progressService, aiService, lines, classCount)
+                handleClassBasedDeepAnalysis(project, editor, selectedText, progressService, aiService, lines, classCount)
             } else {
                 // 仍然直接处理（大文件单类）
-                handleSimpleTranslation(project, editor, selectedText, progressService, aiService)
+                handleSimpleDeepAnalysis(project, editor, selectedText, progressService, aiService)
             }
         }
     }
     
     /**
-     * 简单直接翻译处理
+     * 简单直接深度分析处理
      */
-    private fun handleSimpleTranslation(
+    private fun handleSimpleDeepAnalysis(
         project: Project,
         editor: Editor,
         selectedText: String,
         progressService: ProgressService,
-        aiService: AICodeTranslationService
+        aiService: AIDeepAnalysisService
     ) {
-        val stages = listOf("准备代码解释", "AI翻译处理中", "完成代码解释")
+        val stages = listOf("准备深度解释", "AI深度分析中", "完成深度解释")
         
         progressService.runInBackground(
             project = project,
-            title = "代码解释处理中...",
+            title = "深度代码解释处理中...",
             stages = stages,
             task = { _, updateStage ->
                 
-                updateStage(0, "准备代码解释...")
+                updateStage(0, "准备深度解释...")
                 Thread.sleep(300)
                 
-                updateStage(1, "AI翻译处理中 (${selectedText.split("\n").size} 行)...")
+                updateStage(1, "AI深度分析中 (${selectedText.split("\n").size} 行)...")
                 
                 try {
-                    val translatedCode = aiService.translateCode(selectedText)
+                    val deepAnalysisResult = aiService.deepAnalyzeCode(selectedText)
                     
                     // 直接替换选中内容
                     javax.swing.SwingUtilities.invokeLater {
@@ -76,77 +74,77 @@ class CodeExplanationAction : AnAction("代码解释") {
                             val document = editor.document
                             
                             if (startOffset < document.textLength && endOffset <= document.textLength) {
-                                document.replaceString(startOffset, endOffset, translatedCode)
-                                selectionModel.setSelection(startOffset, startOffset + translatedCode.length)
+                                document.replaceString(startOffset, endOffset, deepAnalysisResult)
+                                selectionModel.setSelection(startOffset, startOffset + deepAnalysisResult.length)
                             }
                         }
                     }
                     
-                    updateStage(2, "代码解释完成！")
+                    updateStage(2, "深度解释完成！")
                     Thread.sleep(200)
                     
-                    translatedCode // 返回翻译结果
+                    deepAnalysisResult // 返回分析结果
                     
                 } catch (e: Exception) {
-                    throw Exception("AI翻译失败: ${e.message}")
+                    throw Exception("AI深度分析失败: ${e.message}")
                 }
             },
             onSuccess = { _ ->
-                Messages.showInfoMessage("代码解释完成！", "代码解释")
+                Messages.showInfoMessage("深度解释完成！", "深度代码解释")
             },
             onError = { ex ->
-                Messages.showErrorDialog("代码解释失败: ${ex.message}", "错误")
+                Messages.showErrorDialog("深度解释失败: ${ex.message}", "错误")
             }
         )
     }
     
     /**
-     * 基于类的分批翻译处理
+     * 基于类的分批深度分析处理
      */
-    private fun handleClassBasedTranslation(
+    private fun handleClassBasedDeepAnalysis(
         project: Project,
         editor: Editor,
         selectedText: String,
         progressService: ProgressService,
-        aiService: AICodeTranslationService,
+        aiService: AIDeepAnalysisService,
         lines: List<String>,
         classCount: Int
     ) {
         val classBatches = extractClassBatches(lines)
         
-        val stages = mutableListOf("准备类级别处理")
+        val stages = mutableListOf("准备类级别深度处理")
         for ((index, batch) in classBatches.withIndex()) {
-            stages.add("处理第 ${index + 1}/$classCount 个类")
+            stages.add("深度分析第 ${index + 1}/$classCount 个类")
         }
-        stages.add("完成所有类处理")
+        stages.add("完成所有类深度处理")
         
         progressService.runInBackground(
             project = project,
-            title = "代码解释 - 类级别处理中...",
+            title = "深度代码解释 - 类级别处理中...",
             stages = stages,
             task = { _, updateStage ->
                 
-                updateStage(0, "准备类级别处理 (共 ${lines.size} 行，$classCount 个类)...")
+                updateStage(0, "准备类级别深度处理 (共 ${lines.size} 行，$classCount 个类)...")
                 Thread.sleep(500)
                 
-                val translatedLines = mutableListOf<String>()
+                val analyzedLines = mutableListOf<String>()
                 
                 for ((batchIndex, batch) in classBatches.withIndex()) {
                     val stageIndex = batchIndex + 1
                     val batchText = batch.joinToString("\n")
                     
-                    updateStage(stageIndex, "正在处理第 ${batchIndex + 1}/$classCount 个类 (${batch.size} 行)...")
+                    updateStage(stageIndex, "正在深度分析第 ${batchIndex + 1}/$classCount 个类 (${batch.size} 行)...")
                     
                     try {
-                        val translatedBatch = aiService.translateCode(batchText)
-                        val translatedBatchLines = translatedBatch.split("\n")
-                        translatedLines.addAll(translatedBatchLines)
+                        val analyzedBatch = aiService.deepAnalyzeCode(batchText)
+                        val analyzedBatchLines = analyzedBatch.split("\n")
+                        analyzedLines.addAll(analyzedBatchLines)
                         
-                        Thread.sleep(800) // 类间延迟
+                        Thread.sleep(1200) // 深度分析需要更多时间
                         
                     } catch (e: Exception) {
-                        println("类 ${batchIndex + 1} 处理失败: ${e.message}")
-                        translatedLines.addAll(batch) // 保持原文
+                        println("类 ${batchIndex + 1} 深度分析失败: ${e.message}")
+                        analyzedLines.addAll(batch) // 保持原文
                     }
                 }
                 
@@ -157,44 +155,44 @@ class CodeExplanationAction : AnAction("代码解释") {
                         val startOffset = selectionModel.selectionStart
                         val endOffset = selectionModel.selectionEnd
                         val document = editor.document
-                        val finalTranslatedText = translatedLines.joinToString("\n")
+                        val finalAnalyzedText = analyzedLines.joinToString("\n")
                         
                         if (startOffset < document.textLength && endOffset <= document.textLength) {
-                            document.replaceString(startOffset, endOffset, finalTranslatedText)
-                            selectionModel.setSelection(startOffset, startOffset + finalTranslatedText.length)
+                            document.replaceString(startOffset, endOffset, finalAnalyzedText)
+                            selectionModel.setSelection(startOffset, startOffset + finalAnalyzedText.length)
                         }
                     }
                 }
                 
-                updateStage(stages.size - 1, "所有类处理完成！")
+                updateStage(stages.size - 1, "所有类深度处理完成！")
                 Thread.sleep(200)
                 
-                translatedLines.joinToString("\n")
+                analyzedLines.joinToString("\n")
             },
             onSuccess = { _ ->
                 Messages.showInfoMessage(
-                    "代码解释完成！\n共处理 ${lines.size} 行代码，包含 $classCount 个类。", 
-                    "类级别代码解释"
+                    "深度解释完成！\n共处理 ${lines.size} 行代码，包含 $classCount 个类。", 
+                    "类级别深度解释"
                 )
             },
             onError = { ex ->
-                Messages.showErrorDialog("代码解释过程中出现错误: ${ex.message}", "错误")
+                Messages.showErrorDialog("深度解释过程中出现错误: ${ex.message}", "错误")
             }
         )
     }
     
     /**
-     * 计算代码中的类定义数量
+     * 计算代码中的类定义数量 - 复用基础解释的逻辑
      */
     private fun countClasses(code: String): Int {
         val classPatterns = listOf(
-            Regex("^\\s*class\\s+\\w+", RegexOption.MULTILINE),           // Java/Kotlin/Python/C#类
-            Regex("^\\s*public\\s+class\\s+\\w+", RegexOption.MULTILINE), // Java public类
-            Regex("^\\s*interface\\s+\\w+", RegexOption.MULTILINE),       // 接口
-            Regex("^\\s*enum\\s+\\w+", RegexOption.MULTILINE),            // 枚举
-            Regex("^\\s*data\\s+class\\s+\\w+", RegexOption.MULTILINE),   // Kotlin data类
-            Regex("^\\s*object\\s+\\w+", RegexOption.MULTILINE),          // Kotlin object
-            Regex("^\\s*abstract\\s+class\\s+\\w+", RegexOption.MULTILINE) // 抽象类
+            Regex("^\\s*class\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*public\\s+class\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*interface\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*enum\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*data\\s+class\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*object\\s+\\w+", RegexOption.MULTILINE),
+            Regex("^\\s*abstract\\s+class\\s+\\w+", RegexOption.MULTILINE)
         )
         
         return classPatterns.sumOf { pattern ->
@@ -203,7 +201,7 @@ class CodeExplanationAction : AnAction("代码解释") {
     }
     
     /**
-     * 按类定义提取批次
+     * 按类定义提取批次 - 复用基础解释的逻辑
      */
     private fun extractClassBatches(lines: List<String>): List<List<String>> {
         val batches = mutableListOf<List<String>>()
@@ -214,9 +212,7 @@ class CodeExplanationAction : AnAction("代码解释") {
         for (line in lines) {
             val trimmedLine = line.trim()
             
-            // 检查是否是类定义的开始
             if (isClassDefinitionStart(trimmedLine)) {
-                // 如果已经有内容，先保存当前批次
                 if (currentBatch.isNotEmpty() && inClass) {
                     batches.add(currentBatch.toList())
                     currentBatch.clear()
@@ -228,11 +224,9 @@ class CodeExplanationAction : AnAction("代码解释") {
             currentBatch.add(line)
             
             if (inClass) {
-                // 计算大括号平衡
                 braceCount += line.count { it == '{' }
                 braceCount -= line.count { it == '}' }
                 
-                // 如果大括号平衡且不在类中，结束当前批次
                 if (braceCount <= 0 && currentBatch.size > 1) {
                     batches.add(currentBatch.toList())
                     currentBatch.clear()
@@ -242,12 +236,10 @@ class CodeExplanationAction : AnAction("代码解释") {
             }
         }
         
-        // 添加剩余内容
         if (currentBatch.isNotEmpty()) {
             batches.add(currentBatch.toList())
         }
         
-        // 如果没有找到类，返回整个文件作为一个批次
         return if (batches.isEmpty()) {
             listOf(lines)
         } else {
@@ -256,7 +248,7 @@ class CodeExplanationAction : AnAction("代码解释") {
     }
     
     /**
-     * 判断是否是类定义开始
+     * 判断是否是类定义开始 - 复用基础解释的逻辑
      */
     private fun isClassDefinitionStart(line: String): Boolean {
         val classKeywords = listOf(
@@ -275,24 +267,24 @@ class CodeExplanationAction : AnAction("代码解释") {
         val hasSelection = editor?.selectionModel?.hasSelection() == true
         e.presentation.isEnabledAndVisible = hasSelection
         
-        // 简化菜单文本提示
+        // 深度解释菜单文本提示
         if (hasSelection && editor != null) {
             val selectedText = getSelectedText(editor)
             val lineCount = selectedText?.split("\n")?.size ?: 0
             
             e.presentation.text = when {
-                lineCount <= 200 -> "代码解释 ($lineCount 行)"
+                lineCount <= 200 -> "深度解释 ($lineCount 行)"
                 else -> {
                     val classCount = countClasses(selectedText ?: "")
                     if (classCount > 1) {
-                        "代码解释 ($lineCount 行，$classCount 个类)"
+                        "深度解释 ($lineCount 行，$classCount 个类)"
                     } else {
-                        "代码解释 ($lineCount 行)"
+                        "深度解释 ($lineCount 行)"
                     }
                 }
             }
         } else {
-            e.presentation.text = "代码解释"
+            e.presentation.text = "深度解释"
         }
     }
     

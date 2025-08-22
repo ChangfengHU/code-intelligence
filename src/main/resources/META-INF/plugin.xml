@@ -88,12 +88,19 @@
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodeTranslationGroup"/>
         </group>
         
-        <!-- 代码解释 -->
-        <action id="CodeExplanationAction" 
-                class="com.vyibc.codeassistant.actions.CodeExplanationAction" 
-                text="代码解释" 
-                description="使用AI翻译代码中的注释和字符串">
+        <!-- 代码解释组 -->
+        <group id="CodeExplanationGroup" text="代码解释" popup="true">
+            <action id="BasicCodeExplanationAction" 
+                    class="com.vyibc.codeassistant.actions.BasicCodeExplanationAction" 
+                    text="基础解释" 
+                    description="对代码中的注释和字符串进行基础翻译">
+            </action>
+            <action id="DeepCodeExplanationAction" 
+                    class="com.vyibc.codeassistant.actions.DeepCodeExplanationAction" 
+                    text="深度解释" 
+                    description="对代码进行深度分析，添加详细的逻辑解释和作用说明">
+            </action>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodePronunciationGroup"/>
-        </action>
+        </group>
     </actions>
 </idea-plugin>
