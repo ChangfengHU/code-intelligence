@@ -6,10 +6,12 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.Messages
 import com.vyibc.codeassistant.services.GoogleTranslateService
+import com.vyibc.codeassistant.ui.TranslationResultDialog
 
 class DirectTranslateAction : AnAction("直接翻译") {
     
     override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         val selectedText = getSelectedText(editor) ?: return
         
@@ -17,10 +19,11 @@ class DirectTranslateAction : AnAction("直接翻译") {
         
         try {
             val translatedText = translationService.translate(selectedText)
-            Messages.showInfoMessage(
-                "原文: $selectedText\n\n译文: $translatedText",
-                "翻译结果"
-            )
+            
+            // 使用自定义对话框显示翻译结果
+            val dialog = TranslationResultDialog(project, selectedText, translatedText)
+            dialog.show()
+            
         } catch (ex: Exception) {
             Messages.showErrorDialog("翻译失败: ${ex.message}", "错误")
         }
