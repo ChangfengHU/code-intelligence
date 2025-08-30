@@ -13,13 +13,14 @@
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
     <description><![CDATA[
-        代码助手插件，提供代码翻译和解释功能<br>
-        <em>Code Assistant Plugin with Translation and Explanation features</em>
+        代码助手插件，提供代码翻译、解释和智能问答功能<br>
+        <em>Code Assistant Plugin with Translation, Explanation and AI Chat features</em>
     ]]></description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
@@ -34,6 +35,12 @@
         <!-- 服务注册 -->
         <applicationService 
             serviceImplementation="com.vyibc.codeassistant.settings.CodeAssistantSettings"/>
+            
+        <!-- 聊天服务注册 -->
+        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.settings.CodeChatSettings"/>
+        <projectService serviceImplementation="com.vyibc.codeassistant.chat.service.SessionManager"/>
+        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.service.PSIContextAnalyzer"/>
+        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.service.AIConversationService"/>
     </extensions>
     
     <!-- Actions -->
@@ -101,6 +108,16 @@
                     description="对代码进行深度分析，添加详细的逻辑解释和作用说明">
             </action>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodePronunciationGroup"/>
+        </group>
+        
+        <!-- 代码对话组 -->
+        <group id="CodeChatGroup" text="代码对话" popup="true">
+            <action id="CodeChatAction" 
+                    class="com.vyibc.codeassistant.actions.CodeChatAction" 
+                    text="问答助手" 
+                    description="基于选中代码进行智能问答，支持多轮对话和上下文分析">
+            </action>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodeExplanationGroup"/>
         </group>
     </actions>
 </idea-plugin>

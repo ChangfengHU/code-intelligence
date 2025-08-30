@@ -21,6 +21,7 @@ dependencies {
 intellij {
     version.set("2023.2.5")
     type.set("IC")
+    plugins.set(listOf("java"))
     
     pluginName.set("Code Assistant")
     updateSinceUntilBuild.set(false)

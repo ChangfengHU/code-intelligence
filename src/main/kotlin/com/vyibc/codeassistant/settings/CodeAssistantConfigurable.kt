@@ -4,14 +4,19 @@ import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.*
 import com.intellij.util.ui.FormBuilder
+import com.intellij.util.ui.JBUI
+import com.vyibc.codeassistant.chat.settings.CodeChatSettings
 import com.vyibc.codeassistant.config.*
 import java.awt.BorderLayout
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 import java.awt.event.ItemEvent
 import javax.swing.*
 
 class CodeAssistantConfigurable : Configurable {
     
-    private var settingsPanel: JPanel? = null
+    private var mainPanel: JPanel? = null
+    private lateinit var tabbedPane: JTabbedPane
     
     // TTS配置组件
     private lateinit var providerComboBox: ComboBox<TTSProvider>
@@ -34,6 +39,21 @@ class CodeAssistantConfigurable : Configurable {
     private lateinit var aiTemperatureSlider: JSlider
     private lateinit var aiMaxTokensField: JBTextField
     
+    // 代码对话配置组件
+    private lateinit var systemPromptArea: JBTextArea
+    private lateinit var maxTokensField: JBTextField
+    private lateinit var temperatureField: JBTextField
+    private lateinit var maxSessionsField: JBTextField
+    private lateinit var maxMessagesField: JBTextField
+    private lateinit var autoSaveField: JBTextField
+    private lateinit var showTimestampCheck: JBCheckBox
+    private lateinit var enableHighlightCheck: JBCheckBox
+    private lateinit var dialogWidthField: JBTextField
+    private lateinit var dialogHeightField: JBTextField
+    private lateinit var showHistoryCheck: JBCheckBox
+    private lateinit var showAIInteractionCheck: JBCheckBox
+    private lateinit var enableDebugCheck: JBCheckBox
+    
     private lateinit var openaiPanel: JPanel
     private lateinit var azurePanel: JPanel
     private lateinit var googlePanel: JPanel
@@ -46,52 +66,177 @@ class CodeAssistantConfigurable : Configurable {
     override fun getDisplayName(): String = "Code Assistant"
     
     override fun createComponent(): JComponent {
+        if (mainPanel == null) {
+            mainPanel = JPanel(BorderLayout())
+            
+            tabbedPane = JTabbedPane()
+            
+            // 创建各个Tab
+            val ttsPanel = createTTSPanel()
+            val aiPanel = createAIPanel()
+            val chatPanel = createChatPanel()
+            
+            tabbedPane.addTab("语音合成 (TTS)", ttsPanel)
+            tabbedPane.addTab("代码翻译 (AI)", aiPanel)
+            tabbedPane.addTab("代码对话", chatPanel)
+            
+            mainPanel!!.add(tabbedPane, BorderLayout.CENTER)
+        }
+        
+        return mainPanel!!
+    }
+    
+    private fun createTTSPanel(): JPanel {
         // 创建TTS组件
         createTTSComponents()
         
+        val panel = JPanel(BorderLayout())
+        
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("语音服务提供商:", providerComboBox)
+            .addComponent(openaiPanel)
+            .addComponent(azurePanel)
+            .addComponent(googlePanel)
+            .addLabeledComponent("语速 (50%-200%):", speedSlider)
+            .addLabeledComponent("音量 (0%-100%):", volumeSlider)
+        
+        panel.add(formBuilder.panel, BorderLayout.NORTH)
+        
+        return panel
+    }
+    
+    private fun createAIPanel(): JPanel {
         // 创建AI组件
         createAIComponents()
         
-        // 创建服务配置面板
-        createServicePanels()
+        val panel = JPanel(BorderLayout())
         
-        // 主面板
-        val mainPanel = JTabbedPane().apply {
-            addTab("语音合成 (TTS)", createTTSMainPanel())
-            addTab("代码翻译 (AI)", createAIMainPanel())
-        }
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("AI服务提供商:", aiProviderComboBox)
+            .addComponent(aiOpenaiPanel)
+            .addComponent(aiAzurePanel)
+            .addComponent(aiClaudePanel)
+            .addComponent(aiGeminiPanel)
+            .addLabeledComponent("Temperature (0-2):", aiTemperatureSlider)
+            .addLabeledComponent("Max Tokens:", aiMaxTokensField)
         
-        settingsPanel = JPanel(BorderLayout()).apply {
-            add(mainPanel, BorderLayout.CENTER)
-        }
+        panel.add(formBuilder.panel, BorderLayout.NORTH)
         
-        return settingsPanel!!
+        return panel
     }
     
+    private fun createChatPanel(): JPanel {
+        val mainPanel = JPanel(GridBagLayout())
+        val gbc = GridBagConstraints()
+        
+        // 设置默认约束
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        gbc.insets = JBUI.insets(5)
+        gbc.weightx = 0.0
+        
+        var row = 0
+        
+        // AI配置部分
+        addSectionTitle(mainPanel, gbc, row++, "AI 配置")
+        
+        addLabelAndTextArea(mainPanel, gbc, row, "系统提示词:", 
+            JBTextArea().also { systemPromptArea = it }.apply {
+                rows = 8
+                lineWrap = true
+                wrapStyleWord = true
+            })
+        row += 2
+        
+        addLabelAndField(mainPanel, gbc, row++, "最大Token数:", 
+            JBTextField().also { maxTokensField = it })
+        
+        addLabelAndField(mainPanel, gbc, row++, "Temperature (0.0-2.0):", 
+            JBTextField().also { temperatureField = it })
+        
+        // 会话管理部分
+        addSectionTitle(mainPanel, gbc, row++, "会话管理")
+        
+        addLabelAndField(mainPanel, gbc, row++, "最大会话数:", 
+            JBTextField().also { maxSessionsField = it })
+        
+        addLabelAndField(mainPanel, gbc, row++, "每个会话最大消息数:", 
+            JBTextField().also { maxMessagesField = it })
+        
+        addLabelAndField(mainPanel, gbc, row++, "自动保存间隔(秒):", 
+            JBTextField().also { autoSaveField = it })
+        
+        // UI配置部分
+        addSectionTitle(mainPanel, gbc, row++, "界面配置")
+        
+        addCheckBox(mainPanel, gbc, row++, "显示时间戳", 
+            JBCheckBox().also { showTimestampCheck = it })
+        
+        addCheckBox(mainPanel, gbc, row++, "启用代码高亮", 
+            JBCheckBox().also { enableHighlightCheck = it })
+        
+        addLabelAndField(mainPanel, gbc, row++, "对话框宽度:", 
+            JBTextField().also { dialogWidthField = it })
+        
+        addLabelAndField(mainPanel, gbc, row++, "对话框高度:", 
+            JBTextField().also { dialogHeightField = it })
+        
+        addCheckBox(mainPanel, gbc, row++, "启动时显示历史记录", 
+            JBCheckBox().also { showHistoryCheck = it })
+        
+        // 调试配置部分
+        addSectionTitle(mainPanel, gbc, row++, "调试配置")
+        
+        addCheckBox(mainPanel, gbc, row++, "显示AI交互详情", 
+            JBCheckBox().also { showAIInteractionCheck = it })
+        
+        addCheckBox(mainPanel, gbc, row++, "启用调试模式", 
+            JBCheckBox().also { enableDebugCheck = it })
+        
+        // 重置按钮
+        gbc.gridy = row
+        gbc.gridx = 0
+        gbc.gridwidth = 2
+        gbc.fill = GridBagConstraints.NONE
+        gbc.anchor = GridBagConstraints.CENTER
+        val resetButton = JButton("恢复默认设置")
+        resetButton.addActionListener { resetChatDefaults() }
+        mainPanel.add(resetButton, gbc)
+        
+        val scrollPane = JScrollPane(mainPanel)
+        scrollPane.border = null
+        
+        val wrapperPanel = JPanel(BorderLayout())
+        wrapperPanel.add(scrollPane, BorderLayout.CENTER)
+        return wrapperPanel
+    }
+    
+    // 以下方法和原来的CodeAssistantConfigurable相同
     private fun createTTSComponents() {
+        // TTS组件创建逻辑
         providerComboBox = ComboBox(TTSProvider.values())
         openaiApiKeyField = JBTextField()
         openaiVoiceComboBox = ComboBox(OpenAIVoice.values())
         azureApiKeyField = JBTextField()
         azureRegionField = JBTextField()
         googleApiKeyField = JBTextField()
+        speedSlider = JSlider(50, 200, 100)
+        volumeSlider = JSlider(0, 100, 80)
         
-        speedSlider = JSlider(50, 200, 100).apply {
-            majorTickSpacing = 50
-            minorTickSpacing = 25
-            paintTicks = true
-            paintLabels = true
-        }
+        // 创建面板
+        openaiPanel = createOpenAIPanel()
+        azurePanel = createAzurePanel()
+        googlePanel = createGooglePanel()
         
-        volumeSlider = JSlider(0, 100, 100).apply {
-            majorTickSpacing = 25
-            minorTickSpacing = 5
-            paintTicks = true
-            paintLabels = true
+        // 设置监听器
+        providerComboBox.addItemListener { e ->
+            if (e.stateChange == ItemEvent.SELECTED) {
+                updatePanelVisibility()
+            }
         }
     }
     
     private fun createAIComponents() {
+        // AI组件创建逻辑
         aiProviderComboBox = ComboBox(AIProvider.values())
         aiOpenaiApiKeyField = JBTextField()
         aiOpenaiModelField = JBTextField()
@@ -99,181 +244,335 @@ class CodeAssistantConfigurable : Configurable {
         aiAzureEndpointField = JBTextField()
         aiClaudeApiKeyField = JBTextField()
         aiGeminiApiKeyField = JBTextField()
-        
-        aiTemperatureSlider = JSlider(0, 100, 30).apply {
-            majorTickSpacing = 25
-            minorTickSpacing = 5
-            paintTicks = true
-            paintLabels = true
-        }
-        
+        aiTemperatureSlider = JSlider(0, 200, 70)
         aiMaxTokensField = JBTextField()
+        
+        // 创建面板
+        aiOpenaiPanel = createAIOpenAIPanel()
+        aiAzurePanel = createAIAzurePanel()
+        aiClaudePanel = createAIClaudePanel()
+        aiGeminiPanel = createAIGeminiPanel()
+        
+        // 设置监听器
+        aiProviderComboBox.addItemListener { e ->
+            if (e.stateChange == ItemEvent.SELECTED) {
+                updateAIPanelVisibility()
+            }
+        }
     }
     
-    private fun createTTSMainPanel(): JComponent {
-        val mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent("语音服务提供商:", providerComboBox)
-            .addComponentFillVertically(createTTSServicePanel(), 0)
-            .addSeparator()
-            .addLabeledComponent("语速 (50%-200%):", speedSlider)
-            .addLabeledComponent("音量 (0%-100%):", volumeSlider)
-            .addComponentFillVertically(JPanel(), 0)
-            .panel
-            
-        return mainPanel
-    }
-    
-    private fun createAIMainPanel(): JComponent {
-        val mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent("AI服务提供商:", aiProviderComboBox)
-            .addComponentFillVertically(createAIServicePanel(), 0)
-            .addSeparator()
-            .addLabeledComponent("温度 (0-1.0):", aiTemperatureSlider)
-            .addLabeledComponent("最大Token数:", aiMaxTokensField)
-            .addComponentFillVertically(JPanel(), 0)
-            .panel
-            
-        return mainPanel
-    }
-    
-    private fun createServicePanels() {
-        // TTS服务配置面板
-        openaiPanel = FormBuilder.createFormBuilder()
+    private fun createOpenAIPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", openaiApiKeyField)
             .addLabeledComponent("语音类型:", openaiVoiceComboBox)
-            .addComponent(JBLabel("<html><small>获取API Key: <a href='https://platform.openai.com/api-keys'>https://platform.openai.com/api-keys</a></small></html>"))
-            .panel
-            
-        azurePanel = FormBuilder.createFormBuilder()
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAzurePanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", azureApiKeyField)
-            .addLabeledComponent("区域:", azureRegionField)
-            .addComponent(JBLabel("<html><small>获取API Key: <a href='https://portal.azure.com'>Azure Portal</a></small></html>"))
-            .panel
-            
-        googlePanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent("Region:", azureRegionField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createGooglePanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", googleApiKeyField)
-            .addComponent(JBLabel("<html><small>获取API Key: <a href='https://console.cloud.google.com'>Google Cloud Console</a></small></html>"))
-            .panel
-            
-        // AI服务配置面板
-        aiOpenaiPanel = FormBuilder.createFormBuilder()
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAIOpenAIPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", aiOpenaiApiKeyField)
-            .addLabeledComponent("模型:", aiOpenaiModelField)
-            .addComponent(JBLabel("<html><small>支持模型: gpt-3.5-turbo, gpt-4, gpt-4-turbo等</small></html>"))
-            .panel
-            
-        aiAzurePanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent("Model:", aiOpenaiModelField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAIAzurePanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", aiAzureApiKeyField)
-            .addLabeledComponent("端点:", aiAzureEndpointField)
-            .addComponent(JBLabel("<html><small>Azure OpenAI服务端点</small></html>"))
-            .panel
-            
-        aiClaudePanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent("Endpoint:", aiAzureEndpointField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAIClaudePanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", aiClaudeApiKeyField)
-            .addComponent(JBLabel("<html><small>Anthropic Claude API Key (暂未实现)</small></html>"))
-            .panel
-            
-        aiGeminiPanel = FormBuilder.createFormBuilder()
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAIGeminiPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", aiGeminiApiKeyField)
-            .addComponent(JBLabel("<html><small>Google Gemini API Key (暂未实现)</small></html>"))
-            .panel
+        panel.add(formBuilder.panel)
+        return panel
     }
     
-    private fun createTTSServicePanel(): JComponent {
-        val tabbedPane = JTabbedPane()
-        tabbedPane.addTab("OpenAI", openaiPanel)
-        tabbedPane.addTab("Azure", azurePanel)  
-        tabbedPane.addTab("Google", googlePanel)
-        tabbedPane.addTab("系统TTS", JBLabel("使用本地系统语音合成，无需配置"))
-        return tabbedPane
+    private fun updatePanelVisibility() {
+        val selected = providerComboBox.selectedItem as TTSProvider
+        openaiPanel.isVisible = selected == TTSProvider.OPENAI
+        azurePanel.isVisible = selected == TTSProvider.AZURE
+        googlePanel.isVisible = selected == TTSProvider.GOOGLE
     }
     
-    private fun createAIServicePanel(): JComponent {
-        val tabbedPane = JTabbedPane()
-        tabbedPane.addTab("OpenAI", aiOpenaiPanel)
-        tabbedPane.addTab("Azure OpenAI", aiAzurePanel)
-        tabbedPane.addTab("Claude", aiClaudePanel)
-        tabbedPane.addTab("Gemini", aiGeminiPanel)
-        return tabbedPane
+    private fun updateAIPanelVisibility() {
+        val selected = aiProviderComboBox.selectedItem as AIProvider
+        aiOpenaiPanel.isVisible = selected == AIProvider.OPENAI
+        aiAzurePanel.isVisible = selected == AIProvider.AZURE_OPENAI
+        aiClaudePanel.isVisible = selected == AIProvider.CLAUDE
+        aiGeminiPanel.isVisible = selected == AIProvider.GEMINI
+    }
+    
+    // 代码对话配置相关方法
+    private fun addSectionTitle(panel: JPanel, gbc: GridBagConstraints, row: Int, title: String) {
+        gbc.gridy = row
+        gbc.gridx = 0
+        gbc.gridwidth = 2
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        
+        val label = JBLabel("<html><b>$title</b></html>")
+        label.border = JBUI.Borders.empty(10, 0, 5, 0)
+        panel.add(label, gbc)
+    }
+    
+    private fun addLabelAndField(panel: JPanel, gbc: GridBagConstraints, row: Int, 
+                                labelText: String, field: JTextField) {
+        gbc.gridy = row
+        gbc.gridwidth = 1
+        
+        gbc.gridx = 0
+        gbc.weightx = 0.0
+        gbc.fill = GridBagConstraints.NONE
+        panel.add(JBLabel(labelText), gbc)
+        
+        gbc.gridx = 1
+        gbc.weightx = 1.0
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        panel.add(field, gbc)
+    }
+    
+    private fun addLabelAndTextArea(panel: JPanel, gbc: GridBagConstraints, row: Int, 
+                                   labelText: String, textArea: JBTextArea) {
+        gbc.gridy = row
+        gbc.gridx = 0
+        gbc.gridwidth = 2
+        gbc.weightx = 1.0
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        panel.add(JBLabel(labelText), gbc)
+        
+        gbc.gridy = row + 1
+        gbc.weighty = 0.3
+        gbc.fill = GridBagConstraints.BOTH
+        val scrollPane = JScrollPane(textArea)
+        scrollPane.preferredSize = java.awt.Dimension(-1, 150)
+        panel.add(scrollPane, gbc)
+        gbc.weighty = 0.0
+    }
+    
+    private fun addCheckBox(panel: JPanel, gbc: GridBagConstraints, row: Int, 
+                           text: String, checkBox: JBCheckBox) {
+        gbc.gridy = row
+        gbc.gridx = 0
+        gbc.gridwidth = 2
+        gbc.fill = GridBagConstraints.NONE
+        gbc.anchor = GridBagConstraints.WEST
+        
+        checkBox.text = text
+        panel.add(checkBox, gbc)
     }
     
     override fun isModified(): Boolean {
         val settings = CodeAssistantSettings.getInstance()
-        val currentTTSConfig = settings.getTTSConfig()
-        val currentAIConfig = settings.getAIConfig()
+        val chatSettings = CodeChatSettings.getInstance()
         
-        return providerComboBox.selectedItem != currentTTSConfig.provider ||
-               openaiApiKeyField.text != currentTTSConfig.openaiApiKey ||
-               openaiVoiceComboBox.selectedItem != currentTTSConfig.openaiVoice ||
-               azureApiKeyField.text != currentTTSConfig.azureApiKey ||
-               azureRegionField.text != currentTTSConfig.azureRegion ||
-               googleApiKeyField.text != currentTTSConfig.googleApiKey ||
-               speedSlider.value != (currentTTSConfig.speed * 100).toInt() ||
-               volumeSlider.value != (currentTTSConfig.volume * 100).toInt() ||
-               aiProviderComboBox.selectedItem != currentAIConfig.provider ||
-               aiOpenaiApiKeyField.text != currentAIConfig.openaiApiKey ||
-               aiOpenaiModelField.text != currentAIConfig.openaiModel ||
-               aiAzureApiKeyField.text != currentAIConfig.azureOpenaiApiKey ||
-               aiAzureEndpointField.text != currentAIConfig.azureOpenaiEndpoint ||
-               aiClaudeApiKeyField.text != currentAIConfig.claudeApiKey ||
-               aiGeminiApiKeyField.text != currentAIConfig.geminiApiKey ||
-               aiTemperatureSlider.value != (currentAIConfig.temperature * 100).toInt() ||
-               aiMaxTokensField.text != currentAIConfig.maxTokens.toString()
+        return isTTSModified(settings) || isAIModified(settings) || isChatModified(chatSettings)
+    }
+    
+    private fun isTTSModified(settings: CodeAssistantSettings): Boolean {
+        val state = settings.state
+        return providerComboBox.selectedItem != TTSProvider.valueOf(state.ttsProvider) ||
+               openaiApiKeyField.text != state.openaiApiKey ||
+               openaiVoiceComboBox.selectedItem != OpenAIVoice.valueOf(state.openaiVoice) ||
+               azureApiKeyField.text != state.azureApiKey ||
+               azureRegionField.text != state.azureRegion ||
+               googleApiKeyField.text != state.googleApiKey ||
+               speedSlider.value != (state.ttsSpeed * 100).toInt() ||
+               volumeSlider.value != (state.ttsVolume * 100).toInt()
+    }
+    
+    private fun isAIModified(settings: CodeAssistantSettings): Boolean {
+        val state = settings.state
+        return aiProviderComboBox.selectedItem != AIProvider.valueOf(state.aiProvider) ||
+               aiOpenaiApiKeyField.text != state.aiOpenaiApiKey ||
+               aiOpenaiModelField.text != state.aiOpenaiModel ||
+               aiAzureApiKeyField.text != state.aiAzureOpenaiApiKey ||
+               aiAzureEndpointField.text != state.aiAzureOpenaiEndpoint ||
+               aiClaudeApiKeyField.text != state.aiClaudeApiKey ||
+               aiGeminiApiKeyField.text != state.aiGeminiApiKey ||
+               aiTemperatureSlider.value != (state.aiTemperature * 100).toInt() ||
+               aiMaxTokensField.text != state.aiMaxTokens.toString()
+    }
+    
+    private fun isChatModified(chatSettings: CodeChatSettings): Boolean {
+        val state = chatSettings.state
+        return systemPromptArea.text != state.systemPrompt ||
+               maxTokensField.text != state.maxTokens.toString() ||
+               temperatureField.text != state.temperature.toString() ||
+               maxSessionsField.text != state.maxSessions.toString() ||
+               maxMessagesField.text != state.maxMessagesPerSession.toString() ||
+               autoSaveField.text != state.autoSaveInterval.toString() ||
+               showTimestampCheck.isSelected != state.showTimestamp ||
+               enableHighlightCheck.isSelected != state.enableCodeHighlight ||
+               dialogWidthField.text != state.dialogWidth.toString() ||
+               dialogHeightField.text != state.dialogHeight.toString() ||
+               showHistoryCheck.isSelected != state.showHistoryOnStart ||
+               showAIInteractionCheck.isSelected != state.showAIInteraction ||
+               enableDebugCheck.isSelected != state.enableDebugMode
     }
     
     override fun apply() {
         val settings = CodeAssistantSettings.getInstance()
+        val chatSettings = CodeChatSettings.getInstance()
         
-        // 保存TTS配置
-        val ttsConfig = settings.getTTSConfig()
-        ttsConfig.provider = providerComboBox.selectedItem as TTSProvider
-        ttsConfig.openaiApiKey = openaiApiKeyField.text
-        ttsConfig.openaiVoice = openaiVoiceComboBox.selectedItem as OpenAIVoice
-        ttsConfig.azureApiKey = azureApiKeyField.text
-        ttsConfig.azureRegion = azureRegionField.text
-        ttsConfig.googleApiKey = googleApiKeyField.text
-        ttsConfig.speed = speedSlider.value / 100.0f
-        ttsConfig.volume = volumeSlider.value / 100.0f
-        settings.updateTTSConfig(ttsConfig)
-        
-        // 保存AI配置
-        val aiConfig = settings.getAIConfig()
-        aiConfig.provider = aiProviderComboBox.selectedItem as AIProvider
-        aiConfig.openaiApiKey = aiOpenaiApiKeyField.text
-        aiConfig.openaiModel = aiOpenaiModelField.text.takeIf { it.isNotBlank() } ?: "gpt-3.5-turbo"
-        aiConfig.azureOpenaiApiKey = aiAzureApiKeyField.text
-        aiConfig.azureOpenaiEndpoint = aiAzureEndpointField.text
-        aiConfig.claudeApiKey = aiClaudeApiKeyField.text
-        aiConfig.geminiApiKey = aiGeminiApiKeyField.text
-        aiConfig.temperature = aiTemperatureSlider.value / 100.0f
-        aiConfig.maxTokens = aiMaxTokensField.text.toIntOrNull() ?: 2000
-        settings.updateAIConfig(aiConfig)
+        applyTTSSettings(settings)
+        applyAISettings(settings)
+        applyChatSettings(chatSettings)
+    }
+    
+    private fun applyTTSSettings(settings: CodeAssistantSettings) {
+        val state = settings.state
+        state.ttsProvider = (providerComboBox.selectedItem as TTSProvider).name
+        state.openaiApiKey = openaiApiKeyField.text
+        state.openaiVoice = (openaiVoiceComboBox.selectedItem as OpenAIVoice).name
+        state.azureApiKey = azureApiKeyField.text
+        state.azureRegion = azureRegionField.text
+        state.googleApiKey = googleApiKeyField.text
+        state.ttsSpeed = speedSlider.value / 100.0f
+        state.ttsVolume = volumeSlider.value / 100.0f
+    }
+    
+    private fun applyAISettings(settings: CodeAssistantSettings) {
+        val state = settings.state
+        state.aiProvider = (aiProviderComboBox.selectedItem as AIProvider).name
+        state.aiOpenaiApiKey = aiOpenaiApiKeyField.text
+        state.aiOpenaiModel = aiOpenaiModelField.text
+        state.aiAzureOpenaiApiKey = aiAzureApiKeyField.text
+        state.aiAzureOpenaiEndpoint = aiAzureEndpointField.text
+        state.aiClaudeApiKey = aiClaudeApiKeyField.text
+        state.aiGeminiApiKey = aiGeminiApiKeyField.text
+        state.aiTemperature = aiTemperatureSlider.value / 100.0f
+        state.aiMaxTokens = aiMaxTokensField.text.toIntOrNull() ?: state.aiMaxTokens
+    }
+    
+    private fun applyChatSettings(chatSettings: CodeChatSettings) {
+        val state = chatSettings.state
+        try {
+            state.systemPrompt = systemPromptArea.text
+            state.maxTokens = maxTokensField.text.toIntOrNull() ?: state.maxTokens
+            state.temperature = temperatureField.text.toDoubleOrNull() ?: state.temperature
+            state.maxSessions = maxSessionsField.text.toIntOrNull() ?: state.maxSessions
+            state.maxMessagesPerSession = maxMessagesField.text.toIntOrNull() ?: state.maxMessagesPerSession
+            state.autoSaveInterval = autoSaveField.text.toIntOrNull() ?: state.autoSaveInterval
+            state.showTimestamp = showTimestampCheck.isSelected
+            state.enableCodeHighlight = enableHighlightCheck.isSelected
+            state.dialogWidth = dialogWidthField.text.toIntOrNull() ?: state.dialogWidth
+            state.dialogHeight = dialogHeightField.text.toIntOrNull() ?: state.dialogHeight
+            state.showHistoryOnStart = showHistoryCheck.isSelected
+            state.showAIInteraction = showAIInteractionCheck.isSelected
+            state.enableDebugMode = enableDebugCheck.isSelected
+        } catch (e: Exception) {
+            JOptionPane.showMessageDialog(null, "保存设置时出错: ${e.message}", "错误", JOptionPane.ERROR_MESSAGE)
+        }
     }
     
     override fun reset() {
         val settings = CodeAssistantSettings.getInstance()
-        val ttsConfig = settings.getTTSConfig()
-        val aiConfig = settings.getAIConfig()
+        val chatSettings = CodeChatSettings.getInstance()
         
-        // 重置TTS配置
-        providerComboBox.selectedItem = ttsConfig.provider
-        openaiApiKeyField.text = ttsConfig.openaiApiKey
-        openaiVoiceComboBox.selectedItem = ttsConfig.openaiVoice
-        azureApiKeyField.text = ttsConfig.azureApiKey
-        azureRegionField.text = ttsConfig.azureRegion
-        googleApiKeyField.text = ttsConfig.googleApiKey
-        speedSlider.value = (ttsConfig.speed * 100).toInt()
-        volumeSlider.value = (ttsConfig.volume * 100).toInt()
+        resetTTSSettings(settings)
+        resetAISettings(settings)
+        resetChatSettings(chatSettings)
         
-        // 重置AI配置
-        aiProviderComboBox.selectedItem = aiConfig.provider
-        aiOpenaiApiKeyField.text = aiConfig.openaiApiKey
-        aiOpenaiModelField.text = aiConfig.openaiModel
-        aiAzureApiKeyField.text = aiConfig.azureOpenaiApiKey
-        aiAzureEndpointField.text = aiConfig.azureOpenaiEndpoint
-        aiClaudeApiKeyField.text = aiConfig.claudeApiKey
-        aiGeminiApiKeyField.text = aiConfig.geminiApiKey
-        aiTemperatureSlider.value = (aiConfig.temperature * 100).toInt()
-        aiMaxTokensField.text = aiConfig.maxTokens.toString()
+        updatePanelVisibility()
+        updateAIPanelVisibility()
+    }
+    
+    private fun resetTTSSettings(settings: CodeAssistantSettings) {
+        val state = settings.state
+        providerComboBox.selectedItem = TTSProvider.valueOf(state.ttsProvider)
+        openaiApiKeyField.text = state.openaiApiKey
+        openaiVoiceComboBox.selectedItem = OpenAIVoice.valueOf(state.openaiVoice)
+        azureApiKeyField.text = state.azureApiKey
+        azureRegionField.text = state.azureRegion
+        googleApiKeyField.text = state.googleApiKey
+        speedSlider.value = (state.ttsSpeed * 100).toInt()
+        volumeSlider.value = (state.ttsVolume * 100).toInt()
+    }
+    
+    private fun resetAISettings(settings: CodeAssistantSettings) {
+        val state = settings.state
+        aiProviderComboBox.selectedItem = AIProvider.valueOf(state.aiProvider)
+        aiOpenaiApiKeyField.text = state.aiOpenaiApiKey
+        aiOpenaiModelField.text = state.aiOpenaiModel
+        aiAzureApiKeyField.text = state.aiAzureOpenaiApiKey
+        aiAzureEndpointField.text = state.aiAzureOpenaiEndpoint
+        aiClaudeApiKeyField.text = state.aiClaudeApiKey
+        aiGeminiApiKeyField.text = state.aiGeminiApiKey
+        aiTemperatureSlider.value = (state.aiTemperature * 100).toInt()
+        aiMaxTokensField.text = state.aiMaxTokens.toString()
+    }
+    
+    private fun resetChatSettings(chatSettings: CodeChatSettings) {
+        val state = chatSettings.state
+        systemPromptArea.text = state.systemPrompt
+        maxTokensField.text = state.maxTokens.toString()
+        temperatureField.text = state.temperature.toString()
+        maxSessionsField.text = state.maxSessions.toString()
+        maxMessagesField.text = state.maxMessagesPerSession.toString()
+        autoSaveField.text = state.autoSaveInterval.toString()
+        showTimestampCheck.isSelected = state.showTimestamp
+        enableHighlightCheck.isSelected = state.enableCodeHighlight
+        dialogWidthField.text = state.dialogWidth.toString()
+        dialogHeightField.text = state.dialogHeight.toString()
+        showHistoryCheck.isSelected = state.showHistoryOnStart
+        showAIInteractionCheck.isSelected = state.showAIInteraction
+        enableDebugCheck.isSelected = state.enableDebugMode
+    }
+    
+    private fun resetChatDefaults() {
+        val defaultState = CodeChatSettings.State()
+        systemPromptArea.text = defaultState.systemPrompt
+        maxTokensField.text = defaultState.maxTokens.toString()
+        temperatureField.text = defaultState.temperature.toString()
+        maxSessionsField.text = defaultState.maxSessions.toString()
+        maxMessagesField.text = defaultState.maxMessagesPerSession.toString()
+        autoSaveField.text = defaultState.autoSaveInterval.toString()
+        showTimestampCheck.isSelected = defaultState.showTimestamp
+        enableHighlightCheck.isSelected = defaultState.enableCodeHighlight
+        dialogWidthField.text = defaultState.dialogWidth.toString()
+        dialogHeightField.text = defaultState.dialogHeight.toString()
+        showHistoryCheck.isSelected = defaultState.showHistoryOnStart
+        showAIInteractionCheck.isSelected = defaultState.showAIInteraction
+        enableDebugCheck.isSelected = defaultState.enableDebugMode
     }
 }
