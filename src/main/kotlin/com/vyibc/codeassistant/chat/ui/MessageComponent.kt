@@ -82,14 +82,18 @@ class MessageComponent(private val message: ChatMessage) : JPanel(BorderLayout()
         val totalHeight = Math.max(60, (message.content.split('\n').size * 20) + 40)
         preferredSize = java.awt.Dimension(700, totalHeight)
         maximumSize = java.awt.Dimension(Short.MAX_VALUE.toInt(), totalHeight)
+        minimumSize = java.awt.Dimension(200, totalHeight)
+        
+        // 设置对齐方式
+        alignmentX = 0.0f // 左对齐
     }
     
     private fun getMessageStyle(type: MessageType): Triple<String, String, Color> {
         return when (type) {
-            MessageType.USER -> Triple("👤", "你", Color(235, 245, 255))
-            MessageType.ASSISTANT -> Triple("🤖", "助手", Color(240, 255, 240))
+            MessageType.USER -> Triple("👤", "你", Color(230, 240, 255))
+            MessageType.ASSISTANT -> Triple("🤖", "助手", Color(240, 250, 240))
             MessageType.CODE_ANALYSIS -> Triple("🔍", "代码分析", Color(255, 248, 220))
-            MessageType.SYSTEM -> Triple("ℹ️", "系统", Color(245, 245, 245))
+            MessageType.SYSTEM -> Triple("ℹ️", "系统", Color(248, 248, 248))
         }
     }
     

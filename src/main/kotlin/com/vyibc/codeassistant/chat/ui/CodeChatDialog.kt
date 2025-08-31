@@ -38,8 +38,8 @@ class CodeChatDialog(
     
     private val sessionManager = SessionManager.getInstance()
     private val aiService = AIConversationService.getInstance()
-    private val config = ChatConfig()
     private val chatSettings = CodeChatSettings.getInstance()
+    private val config = ChatConfig(chatSettings.state)
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
     init {
@@ -57,19 +57,10 @@ class CodeChatDialog(
         // 在UI初始化完成后加载内容
         SwingUtilities.invokeLater {
             println("开始加载对话内容...")
-            
-            // 添加一个简单的测试消息，确保可以显示
-            val testLabel = JLabel("🚀 代码问答助手已启动！测试消息")
-            testLabel.font = Font(Font.SANS_SERIF, Font.BOLD, 14)
-            testLabel.foreground = Color.BLUE
-            testLabel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
-            testLabel.preferredSize = java.awt.Dimension(600, 40)
-            
-            messagesPanel.add(testLabel)
-            messagesPanel.revalidate()
-            messagesPanel.repaint()
-            
-            println("测试标签已添加，开始正式添加消息...")
+            println("messagesPanel: $messagesPanel")
+            println("messagesPanel.layout: ${messagesPanel.layout}")
+            println("messagesPanel.size: ${messagesPanel.size}")
+            println("messagesPanel.preferredSize: ${messagesPanel.preferredSize}")
             
             // 先添加一个启动消息
             val startupMessage = ChatMessage(
@@ -88,14 +79,10 @@ class CodeChatDialog(
             if (session.messages.isEmpty()) {
                 println("会话为空，开始初始分析...")
                 // 使用SwingTimer延迟执行初始分析，确保UI完全初始化
-                val delayTimer = Timer(2000) {
+                val delayTimer = Timer(1500) {
                     println("定时器触发，开始执行初始分析...")
                     // 先清除启动消息
                     removeMessageFromUI(startupMessage)
-                    // 移除测试标签
-                    messagesPanel.remove(testLabel)
-                    messagesPanel.revalidate()
-                    messagesPanel.repaint()
                     
                     performInitialAnalysis()
                 }
@@ -114,18 +101,19 @@ class CodeChatDialog(
         // 创建消息显示区域
         messagesPanel = JPanel()
         messagesPanel.layout = BoxLayout(messagesPanel, BoxLayout.Y_AXIS)
-        messagesPanel.background = JBColor.background()
+        messagesPanel.background = Color(250, 250, 250) // 浅灰色背景
+        messagesPanel.alignmentX = 0.0f // 左对齐
         
         // 添加一个包装面板确保布局正确
         val wrapperPanel = JPanel(BorderLayout())
         wrapperPanel.add(messagesPanel, BorderLayout.NORTH)
-        wrapperPanel.background = JBColor.background()
+        wrapperPanel.background = Color(250, 250, 250) // 浅灰色背景
         
         scrollPane = JBScrollPane(wrapperPanel)
         scrollPane.verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
         scrollPane.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         scrollPane.border = BorderFactory.createEmptyBorder()
-        scrollPane.background = JBColor.background()
+        scrollPane.background = Color(250, 250, 250) // 浅灰色背景
         
         // 创建输入区域
         val inputPanel = createInputPanel()
@@ -148,7 +136,7 @@ class CodeChatDialog(
     private fun createInputPanel(): JPanel {
         val panel = JPanel(BorderLayout())
         panel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        panel.background = JBColor.background()
+        panel.background = Color(245, 245, 245) // 浅灰色背景
         
         // 输入文本区域
         inputField = JTextArea(3, 50)
@@ -229,7 +217,7 @@ class CodeChatDialog(
             // 如果没有选中代码，显示欢迎消息
             val welcomeMessage = ChatMessage(
                 type = MessageType.SYSTEM,
-                content = "欢迎使用代码对话助手！\n\n请选择一段代码后再次点击菜单，或者直接在下方输入框中提问。"
+                content = "欢迎使用代码对话助手！\n\n请选择一段代码后再次点击菜单，或者直接在下方输入框中提问。\n\n💡 提示：选择代码后，我会自动分析代码的作用和关键点。"
             )
             addMessageToUI(welcomeMessage, false)
             println("欢迎消息已添加")
@@ -247,7 +235,7 @@ class CodeChatDialog(
                 // 添加初始分析消息
                 val analysisMessage = ChatMessage(
                     type = MessageType.CODE_ANALYSIS,
-                    content = "🔍 检测到选中代码，正在进行智能分析...",
+                    content = "🔍 检测到选中代码，正在进行深度分析...",
                     codeContext = codeContext
                 )
                 addMessageToUI(analysisMessage, true)
@@ -256,7 +244,7 @@ class CodeChatDialog(
                 // 添加加载状态
                 loadingMessage = ChatMessage(
                     type = MessageType.SYSTEM,
-                    content = "⚙️ AI正在分析代码的作用和关键点，请稍候..."
+                    content = "⚙️ AI正在深度分析代码的作用、实现原理和关键点，请稍候..."
                 )
                 addMessageToUI(loadingMessage, false)
                 println("加载消息已添加")
@@ -266,15 +254,21 @@ class CodeChatDialog(
                 if (config.showAIInteraction) {
                     addDebugInfo("选中代码长度: ${codeContext.selectedCode.length}")
                     addDebugInfo("文件类型: ${codeContext.className}")
-                    addDebugInfo("开始调用OpenAI API进行初始分析...")
+                    addDebugInfo("方法名: ${codeContext.methodName ?: "未知"}")
+                    addDebugInfo("依赖类数量: ${codeContext.dependencies.size}")
+                    addDebugInfo("调用链数量: ${codeContext.callChain.size}")
+                    addDebugInfo("开始调用OpenAI API进行深度分析...")
                 }
                 
                 println("开始调用AI服务...")
                 
+                // 构建更详细的初始分析提示
+                val initialPrompt = buildInitialAnalysisPrompt()
+                
                 // 调用AI进行初始分析
                 val aiResponse = withContext(Dispatchers.IO) {
                     aiService.sendMessage(
-                        "请分析这段代码的作用和关键点：",
+                        initialPrompt,
                         codeContext,
                         session.messages
                     )
@@ -314,7 +308,7 @@ class CodeChatDialog(
                 
                 val errorMessage = ChatMessage(
                     type = MessageType.SYSTEM,
-                    content = "⚠️ 自动分析失败：${e.message}\n\n请检查：\n1. 网络连接是否正常\n2. API Key 是否在 Tools → Code Assistant → 代码翻译(AI) 中正确配置\n\n您可以直接在下方输入框中提问。"
+                    content = "⚠️ 自动分析失败：${e.message}\n\n请检查：\n1. 网络连接是否正常\n2. API Key 是否在 Tools → Code Assistant → 代码翻译(AI) 中正确配置\n3. 网络代理设置是否正确\n\n您可以直接在下方输入框中提问。"
                 )
                 addMessageToUI(errorMessage, true)
                 addDebugInfo("AI分析失败: ${e.message}")
@@ -325,6 +319,24 @@ class CodeChatDialog(
                 println("初始分析完成，按钮已启用")
             }
         }
+    }
+    
+    /**
+     * 构建初始分析提示词
+     */
+    private fun buildInitialAnalysisPrompt(): String {
+        return """
+请对这段代码进行深度分析，包括：
+
+1. **功能分析**：这段代码的主要作用是什么？
+2. **实现原理**：代码是如何实现其功能的？
+3. **关键点**：代码中的关键逻辑和重要细节
+4. **设计模式**：是否使用了特定的设计模式？
+5. **潜在问题**：是否存在潜在的问题或改进空间？
+6. **依赖关系**：与其他类或方法的交互关系
+
+请提供详细、准确的分析，帮助开发者更好地理解这段代码。
+        """.trimIndent()
     }
     
     private fun sendMessage() {
@@ -423,6 +435,7 @@ class CodeChatDialog(
                 
                 println("创建MessageComponent成功，preferredSize: ${messageComponent.preferredSize}")
                 
+                // 添加到消息面板
                 messagesPanel.add(messageComponent)
                 println("组件已添加到messagesPanel, 当前组件数: ${messagesPanel.componentCount}")
                 
@@ -431,13 +444,19 @@ class CodeChatDialog(
                 messagesPanel.revalidate() 
                 messagesPanel.repaint()
                 
-                // 强制刷新父容器
+                // 强制刷新滚动面板
                 scrollPane.invalidate()
                 scrollPane.revalidate()
                 scrollPane.repaint()
                 
+                // 强制刷新主面板
+                this@CodeChatDialog.contentPanel?.invalidate()
+                this@CodeChatDialog.contentPanel?.revalidate()
+                this@CodeChatDialog.contentPanel?.repaint()
+                
                 println("UI刷新完成")
                 
+                // 滚动到底部
                 scrollToBottom()
                 
                 if (saveToSession) {
@@ -480,8 +499,15 @@ class CodeChatDialog(
     
     private fun scrollToBottom() {
         SwingUtilities.invokeLater {
-            val verticalScrollBar = scrollPane.verticalScrollBar
-            verticalScrollBar.value = verticalScrollBar.maximum
+            try {
+                val verticalScrollBar = scrollPane.verticalScrollBar
+                if (verticalScrollBar.isVisible) {
+                    verticalScrollBar.value = verticalScrollBar.maximum
+                }
+                println("滚动到底部，最大值: ${verticalScrollBar.maximum}, 当前值: ${verticalScrollBar.value}")
+            } catch (e: Exception) {
+                println("滚动到底部失败: ${e.message}")
+            }
         }
     }
     

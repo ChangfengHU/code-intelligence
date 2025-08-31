@@ -19,10 +19,14 @@ class SessionManager {
     private val chatConfig = CodeChatSettings.getInstance().state
     
     /**
-     * 获取或创建会话
+     * 获取或创建会话（基于类全限定路径）
      */
     fun getOrCreateSession(className: String, filePath: String): ChatSession {
-        val existingSession = sessions.values.find { it.className == className }
+        // 使用类全限定路径作为会话标识
+        val sessionKey = className
+        
+        // 查找现有会话
+        val existingSession = sessions.values.find { it.className == sessionKey }
         if (existingSession != null) {
             existingSession.lastActiveAt = System.currentTimeMillis()
             return existingSession
@@ -34,7 +38,7 @@ class SessionManager {
         }
         
         val newSession = ChatSession(
-            className = className,
+            className = sessionKey, // 使用类全限定路径
             filePath = filePath
         )
         
@@ -89,6 +93,42 @@ class SessionManager {
         sessionsToRemove.forEach { session ->
             sessions.remove(session.id)
         }
+        
+        println("清理了 ${sessionsToRemove.size} 个旧会话，当前会话数: ${sessions.size}")
+    }
+    
+    /**
+     * 清理会话中的旧消息
+     */
+    fun cleanupOldMessages(sessionId: String) {
+        val session = sessions[sessionId] ?: return
+        
+        if (session.messages.size > chatConfig.maxMessagesPerSession) {
+            val messagesToKeep = session.messages.takeLast(chatConfig.maxMessagesPerSession)
+            session.messages.clear()
+            session.messages.addAll(messagesToKeep)
+            
+            println("会话 ${session.className} 清理了旧消息，保留最近 ${messagesToKeep.size} 条消息")
+        }
+    }
+    
+    /**
+     * 获取会话统计信息
+     */
+    fun getSessionStats(): Map<String, Any> {
+        val totalSessions = sessions.size
+        val totalMessages = sessions.values.sumOf { it.messages.size }
+        val oldestSession = sessions.values.minByOrNull { it.lastActiveAt }
+        val newestSession = sessions.values.maxByOrNull { it.lastActiveAt }
+        
+        return mapOf(
+            "totalSessions" to totalSessions,
+            "totalMessages" to totalMessages,
+            "maxSessions" to chatConfig.maxSessions,
+            "maxMessagesPerSession" to chatConfig.maxMessagesPerSession,
+            "oldestSession" to (oldestSession?.className ?: "无"),
+            "newestSession" to (newestSession?.className ?: "无")
+        )
     }
     
     /**
