@@ -12,6 +12,7 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.util.PsiTreeUtil
 import com.vyibc.codeassistant.chat.service.PSIContextAnalyzer
 import com.vyibc.codeassistant.chat.service.SessionManager
+import com.vyibc.codeassistant.chat.settings.CodeChatSettings
 import com.vyibc.codeassistant.chat.ui.CodeChatDialog
 
 class CodeChatAction : AnAction("问答助手") {
@@ -23,8 +24,7 @@ class CodeChatAction : AnAction("问答助手") {
         
         val selectedText = getSelectedText(editor)
         if (selectedText.isNullOrBlank()) {
-            Messages.showWarningDialog("请先选择要分析的代码", "提示")
-            return
+            // 没有选择也允许打开，做空上下文问答
         }
         
         // 获取选中范围
@@ -49,20 +49,32 @@ class CodeChatAction : AnAction("问答助手") {
         val codeContext = contextAnalyzer.analyzeContext(psiFile, selectionRange)
         
         // 获取或创建会话
-        val sessionManager = SessionManager.getInstance()
+        val sessionManager = SessionManager.getInstance(project)
         val session = sessionManager.getOrCreateSession(className, psiFile.virtualFile.path)
+
+        // 如果没有选择代码，构建空上下文（允许用户直接问答）
+        val actualContext = if (selectedText.isNullOrBlank()) {
+            com.vyibc.codeassistant.chat.model.CodeContext(
+                selectedCode = "",
+                selectedRange = TextRange(0, 0),
+                className = className,
+                methodName = null,
+                classContext = psiFile.text.take(2000),
+                imports = emptyList()
+            )
+        } else codeContext
         
         // 显示对话框
         ApplicationManager.getApplication().invokeLater {
-            val dialog = CodeChatDialog(project, session, codeContext)
+            val dialog = CodeChatDialog(project, session, actualContext)
             dialog.show()
         }
     }
     
     override fun update(e: AnActionEvent) {
-        val editor = e.getData(CommonDataKeys.EDITOR)
-        val hasSelection = editor?.selectionModel?.hasSelection() == true
-        e.presentation.isEnabledAndVisible = hasSelection
+        // 始终展示入口，允许无选择打开弹窗
+        e.presentation.isEnabledAndVisible = true
+        e.presentation.isEnabled = e.project != null
     }
     
     private fun getSelectedText(editor: Editor): String? {

@@ -13,7 +13,8 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    // HTTP client for Google Translate API
+    // 协程库由平台提供，不再手动引入
+    // HTTP client
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.google.code.gson:gson:2.10.1")
 }
@@ -31,6 +32,11 @@ tasks {
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
+    }
+
+    // Disable searchable options build to avoid running a 2nd IDE instance during build
+    buildSearchableOptions {
+        enabled = false
     }
     
     patchPluginXml {

@@ -36,11 +36,11 @@ class CodeChatDialog(
     private lateinit var debugPanel: JPanel
     private lateinit var debugArea: JBTextArea
     
-    private val sessionManager = SessionManager.getInstance()
+    private val sessionManager = SessionManager.getInstance(project)
     private val aiService = AIConversationService.getInstance()
     private val chatSettings = CodeChatSettings.getInstance()
     private val config = ChatConfig(chatSettings.state)
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
     init {
         title = "代码问答助手 - ${getSessionDisplayName(session)}"
@@ -69,6 +69,13 @@ class CodeChatDialog(
             )
             addMessageToUI(startupMessage, false)
             
+            // 添加一个测试消息，确保UI能正确显示
+            val testMessage = ChatMessage(
+                type = MessageType.ASSISTANT,
+                content = "这是一个测试消息，用于验证消息显示功能。如果你能看到这条消息，说明UI显示正常。"
+            )
+            addMessageToUI(testMessage, false)
+            
             // 加载历史消息
             if (config.showHistoryOnStart && session.messages.isNotEmpty()) {
                 println("加载历史消息...")
@@ -76,13 +83,14 @@ class CodeChatDialog(
             }
             
             // 如果是新会话或没有消息，自动进行首次分析
-            if (session.messages.isEmpty()) {
+            if (session.messages.isEmpty() && codeContext.selectedCode.isNotEmpty()) {
                 println("会话为空，开始初始分析...")
                 // 使用SwingTimer延迟执行初始分析，确保UI完全初始化
-                val delayTimer = Timer(1500) {
+                val delayTimer = Timer(2000) {
                     println("定时器触发，开始执行初始分析...")
-                    // 先清除启动消息
+                    // 先清除启动消息和测试消息
                     removeMessageFromUI(startupMessage)
+                    removeMessageFromUI(testMessage)
                     
                     performInitialAnalysis()
                 }
@@ -96,55 +104,49 @@ class CodeChatDialog(
     }
     
     override fun createCenterPanel(): JComponent {
-        val mainPanel = JPanel(BorderLayout())
-        
-        // 创建消息显示区域
+        // 仅聊天面板（去除左侧代码预览），更简洁美观
+        val chatMainPanel = JPanel(BorderLayout()).apply {
+            background = JBColor.background()
+        }
+
+        // 消息显示区域（使用内边距和更自然的背景）
         messagesPanel = JPanel()
         messagesPanel.layout = BoxLayout(messagesPanel, BoxLayout.Y_AXIS)
-        messagesPanel.background = Color(250, 250, 250) // 浅灰色背景
-        messagesPanel.alignmentX = 0.0f // 左对齐
-        
-        // 添加一个包装面板确保布局正确
-        val wrapperPanel = JPanel(BorderLayout())
-        wrapperPanel.add(messagesPanel, BorderLayout.NORTH)
-        wrapperPanel.background = Color(250, 250, 250) // 浅灰色背景
-        
-        scrollPane = JBScrollPane(wrapperPanel)
+        messagesPanel.background = JBColor.background()
+        messagesPanel.alignmentX = 0.0f
+        messagesPanel.border = BorderFactory.createEmptyBorder(10, 12, 10, 12)
+
+        scrollPane = JBScrollPane(messagesPanel)
         scrollPane.verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
         scrollPane.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         scrollPane.border = BorderFactory.createEmptyBorder()
-        scrollPane.background = Color(250, 250, 250) // 浅灰色背景
-        
-        // 创建输入区域
+        scrollPane.background = JBColor.background()
+
         val inputPanel = createInputPanel()
-        
-        // 主布局
-        mainPanel.add(scrollPane, BorderLayout.CENTER)
-        mainPanel.add(inputPanel, BorderLayout.SOUTH)
-        
-        // 如果启用了调试模式，添加调试面板
-        if (config.enableDebugMode) {
+
+        chatMainPanel.add(scrollPane, BorderLayout.CENTER)
+        chatMainPanel.add(inputPanel, BorderLayout.SOUTH)
+
+        // 可选调试面板
+        return if (config.enableDebugMode) {
             debugPanel = createDebugPanel()
-            val splitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT, mainPanel, debugPanel)
-            splitPane.resizeWeight = 0.7
-            return splitPane
-        }
-        
-        return mainPanel
+            JSplitPane(JSplitPane.VERTICAL_SPLIT, chatMainPanel, debugPanel).apply { resizeWeight = 0.82 }
+        } else chatMainPanel
     }
     
     private fun createInputPanel(): JPanel {
         val panel = JPanel(BorderLayout())
         panel.border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        panel.background = Color(245, 245, 245) // 浅灰色背景
+        panel.background = JBColor.namedColor("Editor.inputBackground", JBColor.background())
         
         // 输入文本区域
         inputField = JTextArea(3, 50)
         inputField.lineWrap = true
+        inputField.isEnabled = true
         inputField.wrapStyleWord = true
         inputField.font = Font(Font.SANS_SERIF, Font.PLAIN, 14)
         inputField.border = BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(JBColor.GRAY),
+            BorderFactory.createLineBorder(JBColor.border()),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         )
         
@@ -157,6 +159,7 @@ class CodeChatDialog(
         sendButton = JButton("发送")
         sendButton.preferredSize = Dimension(80, 35)
         sendButton.addActionListener { sendMessage() }
+        sendButton.isEnabled = true
         
         clearButton = JButton("清空")
         clearButton.preferredSize = Dimension(80, 35)
@@ -171,12 +174,15 @@ class CodeChatDialog(
         buttonPanel.add(sendButton)
         
         // 布局
-        panel.add(JBLabel("请输入您的问题："), BorderLayout.NORTH)
+        val title = JBLabel("💬 请输入您的问题")
+        title.border = BorderFactory.createEmptyBorder(0, 0, 6, 0)
+        panel.add(title, BorderLayout.NORTH)
         panel.add(inputScrollPane, BorderLayout.CENTER)
         panel.add(buttonPanel, BorderLayout.SOUTH)
         
         // Enter键发送
         inputField.inputMap.put(KeyStroke.getKeyStroke("ctrl ENTER"), "send")
+        inputField.inputMap.put(KeyStroke.getKeyStroke("ENTER"), "send")
         inputField.actionMap.put("send", object : AbstractAction() {
             override fun actionPerformed(e: ActionEvent?) {
                 sendMessage()
@@ -428,16 +434,21 @@ class CodeChatDialog(
         SwingUtilities.invokeLater {
             try {
                 val messageComponent = MessageComponent(message)
-                messageComponent.border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
                 
                 // 记录组件映射
                 messageComponentMap[message] = messageComponent
                 
                 println("创建MessageComponent成功，preferredSize: ${messageComponent.preferredSize}")
+                println("MessageComponent大小: ${messageComponent.size}")
+                println("MessageComponent可见性: ${messageComponent.isVisible}")
                 
                 // 添加到消息面板
                 messagesPanel.add(messageComponent)
                 println("组件已添加到messagesPanel, 当前组件数: ${messagesPanel.componentCount}")
+                
+                // 确保组件可见
+                messageComponent.isVisible = true
+                messageComponent.isOpaque = true
                 
                 // 强制刷新UI
                 messagesPanel.invalidate()
@@ -454,7 +465,8 @@ class CodeChatDialog(
                 this@CodeChatDialog.contentPanel?.revalidate()
                 this@CodeChatDialog.contentPanel?.repaint()
                 
-                println("UI刷新完成")
+                println("UI刷新完成，messagesPanel大小: ${messagesPanel.size}")
+                println("scrollPane大小: ${scrollPane.size}")
                 
                 // 滚动到底部
                 scrollToBottom()

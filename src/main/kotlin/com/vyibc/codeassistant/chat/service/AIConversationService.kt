@@ -85,7 +85,15 @@ class AIConversationService {
             addProperty("max_tokens", chatSettings.state.maxTokens)
         }
         
-        println("请求JSON: ${json}") // 调试日志
+        // 调试日志：格式化 JSON
+        if (chatSettings.state.showAIInteraction || chatSettings.state.enableDebugMode) {
+            try {
+                val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+                println("请求JSON:\n" + gson.toJson(com.google.gson.JsonParser.parseString(json.toString())))
+            } catch (e: Exception) {
+                println("请求JSON构建(非格式化): ${json}")
+            }
+        }
         
         val requestBody = json.toString().toRequestBody("application/json".toMediaType())
         
@@ -110,6 +118,17 @@ class AIConversationService {
             val responseBody = response.body?.string() ?: throw IOException("响应内容为空")
             println("响应内容长度: ${responseBody.length}") // 调试日志
             
+            // 调试：打印返回 JSON（截断避免刷屏）
+            if (chatSettings.state.showAIInteraction || chatSettings.state.enableDebugMode) {
+                try {
+                    val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+                    val pretty = gson.toJson(com.google.gson.JsonParser.parseString(responseBody))
+                    println("响应JSON(截断显示):\n" + pretty.take(4000))
+                } catch (e: Exception) {
+                    println("响应原文(截断):\n" + responseBody.take(4000))
+                }
+            }
+            
             return parseResponse(responseBody)
         }
     }
@@ -117,6 +136,7 @@ class AIConversationService {
     /**
      * 构建消息数组
      */
+    // 构建对话消息，调试时记录入参是否包含历史消息
     private fun buildMessages(
         message: String,
         codeContext: CodeContext,
@@ -139,6 +159,9 @@ class AIConversationService {
         }
         
         // 对话历史
+        if (chatSettings.state.showAIInteraction || chatSettings.state.enableDebugMode) {
+            println("历史消息条数: ${conversationHistory.size}")
+        }
         conversationHistory.forEach { historyMessage ->
             when (historyMessage.type) {
                 MessageType.USER, MessageType.CODE_ANALYSIS -> {
@@ -165,6 +188,11 @@ class AIConversationService {
                 addProperty("role", "user")
                 addProperty("content", message)
             })
+        }
+
+        if (chatSettings.state.showAIInteraction || chatSettings.state.enableDebugMode) {
+            val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+            println("最终入参messages:\n" + gson.toJson(messages))
         }
         
         return messages

@@ -2,6 +2,7 @@ package com.vyibc.codeassistant.chat.service
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import com.vyibc.codeassistant.chat.settings.CodeChatSettings
 import com.vyibc.codeassistant.chat.model.ChatMessage
 import com.vyibc.codeassistant.chat.model.ChatSession
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Service(Service.Level.PROJECT)
 class SessionManager {
+    private val persistence = com.intellij.openapi.components.service<ChatPersistence>()
     
     private val sessions = ConcurrentHashMap<String, ChatSession>()
     private val chatConfig = CodeChatSettings.getInstance().state
@@ -50,6 +52,8 @@ class SessionManager {
      * 保存会话
      */
     fun saveSession(session: ChatSession) {
+        // 这里可以接入 PersistentStateComponent 或本地文件持久化
+        // 当前版本保存在内存中，并按配置条数限制消息条目
         // 检查消息数量限制
         if (session.messages.size > chatConfig.maxMessagesPerSession) {
             // 保留最近的消息
@@ -158,6 +162,6 @@ class SessionManager {
     }
     
     companion object {
-        fun getInstance(): SessionManager = service()
+        fun getInstance(project: Project): SessionManager = project.service()
     }
 }

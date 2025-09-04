@@ -25,98 +25,76 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <!-- 设置页面 -->
-        <applicationConfigurable 
-            parentId="tools" 
-            instance="com.vyibc.codeassistant.settings.CodeAssistantConfigurable" 
-            id="com.vyibc.codeassistant.settings" 
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.vyibc.codeassistant.settings.CodeAssistantConfigurable"
+            id="com.vyibc.codeassistant.settings"
             displayName="Code Assistant"/>
-            
-        <!-- 服务注册 -->
-        <applicationService 
-            serviceImplementation="com.vyibc.codeassistant.settings.CodeAssistantSettings"/>
-            
-        <!-- 聊天服务注册 -->
-        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.settings.CodeChatSettings"/>
-        <projectService serviceImplementation="com.vyibc.codeassistant.chat.service.SessionManager"/>
-        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.service.PSIContextAnalyzer"/>
-        <applicationService serviceImplementation="com.vyibc.codeassistant.chat.service.AIConversationService"/>
+        <applicationService serviceImplementation="com.vyibc.codeassistant.settings.CodeAssistantSettings"/>
     </extensions>
-    
-    <!-- Actions -->
+
     <actions>
-        <!-- 代码翻译组 -->
+        <!-- 代码翻译组（恢复） -->
         <group id="CodeTranslationGroup" text="代码翻译" popup="true">
-            <action id="DirectTranslateAction" 
-                    class="com.vyibc.codeassistant.actions.DirectTranslateAction" 
-                    text="直接翻译" 
-                    description="显示翻译结果对话框">
-            </action>
-            <action id="FullReplaceAction" 
-                    class="com.vyibc.codeassistant.actions.FullReplaceAction" 
-                    text="全文替换" 
-                    description="将选中文本替换为翻译结果">
-            </action>
-            <action id="LineByLineReplaceAction" 
-                    class="com.vyibc.codeassistant.actions.LineByLineReplaceAction" 
-                    text="逐行插入" 
-                    description="在原文行下方插入翻译行">
-            </action>
+            <action id="DirectTranslateAction"
+                    class="com.vyibc.codeassistant.actions.DirectTranslateAction"
+                    text="直接翻译"
+                    description="显示翻译结果对话框"/>
+            <action id="FullReplaceAction"
+                    class="com.vyibc.codeassistant.actions.FullReplaceAction"
+                    text="全文替换"
+                    description="将选中文本替换为翻译结果"/>
+            <action id="LineByLineReplaceAction"
+                    class="com.vyibc.codeassistant.actions.LineByLineReplaceAction"
+                    text="逐行插入"
+                    description="在原文行下方插入翻译行"/>
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
         </group>
-        
-        <!-- 代码发音组 -->
+
+        <!-- 代码发音组（恢复） -->
         <group id="CodePronunciationGroup" text="代码发音" popup="true">
-            <action id="EnglishPronunciationAction" 
-                    class="com.vyibc.codeassistant.actions.EnglishPronunciationAction" 
-                    text="英语发音" 
-                    description="对选中的英文文本进行发音">
-            </action>
-            <action id="ChinesePronunciationAction" 
-                    class="com.vyibc.codeassistant.actions.ChinesePronunciationAction" 
-                    text="中文发音" 
-                    description="将选中英文翻译成中文并发音">
-            </action>
-            <action id="EnglishChinesePronunciationAction" 
-                    class="com.vyibc.codeassistant.actions.EnglishChinesePronunciationAction" 
-                    text="英中对照发音" 
-                    description="先发音英文，再发音中文翻译">
-            </action>
-            <action id="PhoneticInsertionAction" 
-                    class="com.vyibc.codeassistant.actions.PhoneticInsertionAction" 
-                    text="音标插入" 
-                    description="在代码下方插入英文音标">
-            </action>
-            <action id="PronunciationAssistAction" 
-                    class="com.vyibc.codeassistant.actions.PronunciationAssistAction" 
-                    text="发音辅助" 
-                    description="插入中文谐音辅助发音">
-            </action>
+            <action id="EnglishPronunciationAction"
+                    class="com.vyibc.codeassistant.actions.EnglishPronunciationAction"
+                    text="英语发音"
+                    description="对选中的英文文本进行发音"/>
+            <action id="ChinesePronunciationAction"
+                    class="com.vyibc.codeassistant.actions.ChinesePronunciationAction"
+                    text="中文发音"
+                    description="将选中英文翻译成中文并发音"/>
+            <action id="EnglishChinesePronunciationAction"
+                    class="com.vyibc.codeassistant.actions.EnglishChinesePronunciationAction"
+                    text="英中对照发音"
+                    description="先发音英文，再发音中文翻译"/>
+            <action id="PhoneticInsertionAction"
+                    class="com.vyibc.codeassistant.actions.PhoneticInsertionAction"
+                    text="音标插入"
+                    description="在代码下方插入英文音标"/>
+            <action id="PronunciationAssistAction"
+                    class="com.vyibc.codeassistant.actions.PronunciationAssistAction"
+                    text="发音辅助"
+                    description="插入中文谐音辅助发音"/>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodeTranslationGroup"/>
         </group>
-        
-        <!-- 代码解释组 -->
+
+        <!-- 代码解释组（恢复） -->
         <group id="CodeExplanationGroup" text="代码解释" popup="true">
-            <action id="BasicCodeExplanationAction" 
-                    class="com.vyibc.codeassistant.actions.BasicCodeExplanationAction" 
-                    text="基础解释" 
-                    description="对代码中的注释和字符串进行基础翻译">
-            </action>
-            <action id="DeepCodeExplanationAction" 
-                    class="com.vyibc.codeassistant.actions.DeepCodeExplanationAction" 
-                    text="深度解释" 
-                    description="对代码进行深度分析，添加详细的逻辑解释和作用说明">
-            </action>
+            <action id="BasicCodeExplanationAction"
+                    class="com.vyibc.codeassistant.actions.BasicCodeExplanationAction"
+                    text="基础解释"
+                    description="对代码中的注释和字符串进行基础翻译"/>
+            <action id="DeepCodeExplanationAction"
+                    class="com.vyibc.codeassistant.actions.DeepCodeExplanationAction"
+                    text="深度解释"
+                    description="对代码进行深度分析，添加详细的逻辑解释和作用说明"/>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodePronunciationGroup"/>
         </group>
-        
-        <!-- 代码对话组 -->
+
+        <!-- 代码对话组（保留） -->
         <group id="CodeChatGroup" text="代码对话" popup="true">
-            <action id="CodeChatAction" 
-                    class="com.vyibc.codeassistant.actions.CodeChatAction" 
-                    text="问答助手" 
-                    description="基于选中代码进行智能问答，支持多轮对话和上下文分析">
-            </action>
+            <action id="CodeChatAction"
+                    class="com.vyibc.codeassistant.actions.CodeChatAction"
+                    text="问答助手"
+                    description="基于选中代码进行智能问答，支持多轮对话和上下文分析"/>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="CodeExplanationGroup"/>
         </group>
     </actions>
