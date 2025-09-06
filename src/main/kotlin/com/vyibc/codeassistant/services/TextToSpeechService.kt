@@ -173,6 +173,9 @@ class TextToSpeechService {
             TTSProvider.OPENAI -> OpenAITTSService(config)
             TTSProvider.AZURE -> AzureTTSService(config)
             TTSProvider.GOOGLE -> GoogleTTSService(config)
+            TTSProvider.DEEPSEEK -> DeepSeekTTSService(config)
+            TTSProvider.QWEN -> QwenTTSService(config)
+            TTSProvider.GEMINI -> GeminiTTSService(config)
             TTSProvider.SYSTEM -> SystemTTSService(config)
         }
     }
@@ -184,6 +187,15 @@ class TextToSpeechService {
         return when (ttsService) {
             is OpenAITTSService -> {
                 // 使用新的getTTSAudioData方法
+                ttsService.getTTSAudioData(text)
+            }
+            is DeepSeekTTSService -> {
+                ttsService.getTTSAudioData(text)
+            }
+            is QwenTTSService -> {
+                ttsService.getTTSAudioData(text)
+            }
+            is GeminiTTSService -> {
                 ttsService.getTTSAudioData(text)
             }
             else -> {

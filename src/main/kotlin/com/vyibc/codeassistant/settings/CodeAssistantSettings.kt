@@ -20,6 +20,9 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         var azureApiKey: String = "",
         var azureRegion: String = "eastus",
         var googleApiKey: String = "",
+        var deepseekApiKey: String = "",
+        var qwenApiKey: String = "",
+        var geminiApiKey: String = "",
         var ttsSpeed: Float = 1.0f,
         var ttsVolume: Float = 1.0f,
         
@@ -31,6 +34,10 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         var aiAzureOpenaiEndpoint: String = "",
         var aiClaudeApiKey: String = "",
         var aiGeminiApiKey: String = "",
+        var aiDeepseekApiKey: String = "",
+        var aiDeepseekModel: String = "deepseek-chat",
+        var aiQwenApiKey: String = "",
+        var aiQwenModel: String = "qwen-turbo",
         var aiTemperature: Float = 0.3f,
         var aiMaxTokens: Int = 2000
     )
@@ -51,6 +58,9 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
             azureApiKey = myState.azureApiKey,
             azureRegion = myState.azureRegion,
             googleApiKey = myState.googleApiKey,
+            deepseekApiKey = myState.deepseekApiKey,
+            qwenApiKey = myState.qwenApiKey,
+            geminiApiKey = myState.geminiApiKey,
             speed = myState.ttsSpeed,
             volume = myState.ttsVolume
         )
@@ -63,6 +73,9 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         myState.azureApiKey = config.azureApiKey
         myState.azureRegion = config.azureRegion
         myState.googleApiKey = config.googleApiKey
+        myState.deepseekApiKey = config.deepseekApiKey
+        myState.qwenApiKey = config.qwenApiKey
+        myState.geminiApiKey = config.geminiApiKey
         myState.ttsSpeed = config.speed
         myState.ttsVolume = config.volume
     }
@@ -76,6 +89,10 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
             azureOpenaiEndpoint = myState.aiAzureOpenaiEndpoint,
             claudeApiKey = myState.aiClaudeApiKey,
             geminiApiKey = myState.aiGeminiApiKey,
+            deepseekApiKey = myState.aiDeepseekApiKey,
+            deepseekModel = myState.aiDeepseekModel,
+            qwenApiKey = myState.aiQwenApiKey,
+            qwenModel = myState.aiQwenModel,
             temperature = myState.aiTemperature,
             maxTokens = myState.aiMaxTokens
         )
@@ -89,6 +106,10 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         myState.aiAzureOpenaiEndpoint = config.azureOpenaiEndpoint
         myState.aiClaudeApiKey = config.claudeApiKey
         myState.aiGeminiApiKey = config.geminiApiKey
+        myState.aiDeepseekApiKey = config.deepseekApiKey
+        myState.aiDeepseekModel = config.deepseekModel
+        myState.aiQwenApiKey = config.qwenApiKey
+        myState.aiQwenModel = config.qwenModel
         myState.aiTemperature = config.temperature
         myState.aiMaxTokens = config.maxTokens
     }

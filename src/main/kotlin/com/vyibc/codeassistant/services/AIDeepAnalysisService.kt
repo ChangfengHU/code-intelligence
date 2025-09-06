@@ -41,6 +41,14 @@ class AIDeepAnalysisService {
                 // TODO: 实现Gemini深度分析服务
                 throw IOException("Gemini深度分析服务暂未实现")
             }
+            AIProvider.DEEPSEEK -> {
+                // TODO: 实现DeepSeek深度分析服务
+                throw IOException("DeepSeek深度分析服务暂未实现")
+            }
+            AIProvider.QWEN -> {
+                // TODO: 实现阿里千问深度分析服务
+                throw IOException("阿里千问深度分析服务暂未实现")
+            }
         }
     }
 }

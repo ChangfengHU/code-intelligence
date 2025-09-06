@@ -4,6 +4,9 @@ enum class TTSProvider {
     OPENAI("OpenAI TTS", "高质量神经网络语音"),
     AZURE("Azure TTS", "微软认知服务语音"),
     GOOGLE("Google TTS", "谷歌云语音合成"),
+    DEEPSEEK("DeepSeek TTS", "DeepSeek语音合成"),
+    QWEN("阿里千问 TTS", "通义千问语音合成"),
+    GEMINI("Gemini TTS", "Gemini语音合成"),
     SYSTEM("系统TTS", "本地系统语音合成");
     
     val displayName: String
@@ -19,7 +22,9 @@ enum class AIProvider {
     OPENAI("OpenAI GPT", "OpenAI ChatGPT系列模型"),
     AZURE_OPENAI("Azure OpenAI", "微软Azure OpenAI服务"),
     CLAUDE("Claude", "Anthropic Claude模型"),
-    GEMINI("Google Gemini", "谷歌Gemini模型");
+    GEMINI("Google Gemini", "谷歌Gemini模型"),
+    DEEPSEEK("DeepSeek", "DeepSeek AI模型"),
+    QWEN("阿里千问", "阿里巴巴通义千问模型");
     
     val displayName: String
     val description: String
@@ -46,6 +51,9 @@ data class TTSConfig(
     var azureApiKey: String = "",
     var azureRegion: String = "eastus",
     var googleApiKey: String = "",
+    var deepseekApiKey: String = "",
+    var qwenApiKey: String = "",
+    var geminiApiKey: String = "",
     var speed: Float = 1.0f,
     var volume: Float = 1.0f
 )
@@ -58,6 +66,10 @@ data class AIConfig(
     var azureOpenaiEndpoint: String = "",
     var claudeApiKey: String = "",
     var geminiApiKey: String = "",
+    var deepseekApiKey: String = "",
+    var deepseekModel: String = "deepseek-chat",
+    var qwenApiKey: String = "",
+    var qwenModel: String = "qwen-turbo",
     var temperature: Float = 0.3f,
     var maxTokens: Int = 2000
 )

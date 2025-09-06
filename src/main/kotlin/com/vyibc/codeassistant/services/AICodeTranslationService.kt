@@ -37,10 +37,9 @@ class AICodeTranslationService {
                 // TODO: 实现Claude服务
                 throw IOException("Claude服务暂未实现")
             }
-            AIProvider.GEMINI -> {
-                // TODO: 实现Gemini服务
-                throw IOException("Gemini服务暂未实现")
-            }
+            AIProvider.GEMINI -> GeminiAIService(config)
+            AIProvider.DEEPSEEK -> DeepSeekAIService(config)
+            AIProvider.QWEN -> QwenAIService(config)
         }
     }
 }

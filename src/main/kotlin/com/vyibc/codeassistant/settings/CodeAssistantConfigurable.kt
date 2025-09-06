@@ -25,6 +25,9 @@ class CodeAssistantConfigurable : Configurable {
     private lateinit var azureApiKeyField: JBTextField
     private lateinit var azureRegionField: JBTextField
     private lateinit var googleApiKeyField: JBTextField
+    private lateinit var deepseekApiKeyField: JBTextField
+    private lateinit var qwenApiKeyField: JBTextField
+    private lateinit var geminiApiKeyField: JBTextField
     private lateinit var speedSlider: JSlider
     private lateinit var volumeSlider: JSlider
     
@@ -36,6 +39,10 @@ class CodeAssistantConfigurable : Configurable {
     private lateinit var aiAzureEndpointField: JBTextField
     private lateinit var aiClaudeApiKeyField: JBTextField
     private lateinit var aiGeminiApiKeyField: JBTextField
+    private lateinit var aiDeepseekApiKeyField: JBTextField
+    private lateinit var aiDeepseekModelField: JBTextField
+    private lateinit var aiQwenApiKeyField: JBTextField
+    private lateinit var aiQwenModelField: JBTextField
     private lateinit var aiTemperatureSlider: JSlider
     private lateinit var aiMaxTokensField: JBTextField
     
@@ -57,11 +64,16 @@ class CodeAssistantConfigurable : Configurable {
     private lateinit var openaiPanel: JPanel
     private lateinit var azurePanel: JPanel
     private lateinit var googlePanel: JPanel
+    private lateinit var deepseekPanel: JPanel
+    private lateinit var qwenPanel: JPanel
+    private lateinit var geminiPanel: JPanel
     
     private lateinit var aiOpenaiPanel: JPanel
     private lateinit var aiAzurePanel: JPanel
     private lateinit var aiClaudePanel: JPanel
     private lateinit var aiGeminiPanel: JPanel
+    private lateinit var aiDeepseekPanel: JPanel
+    private lateinit var aiQwenPanel: JPanel
     
     override fun getDisplayName(): String = "Code Assistant"
     
@@ -97,6 +109,9 @@ class CodeAssistantConfigurable : Configurable {
             .addComponent(openaiPanel)
             .addComponent(azurePanel)
             .addComponent(googlePanel)
+            .addComponent(deepseekPanel)
+            .addComponent(qwenPanel)
+            .addComponent(geminiPanel)
             .addLabeledComponent("语速 (50%-200%):", speedSlider)
             .addLabeledComponent("音量 (0%-100%):", volumeSlider)
         
@@ -117,6 +132,8 @@ class CodeAssistantConfigurable : Configurable {
             .addComponent(aiAzurePanel)
             .addComponent(aiClaudePanel)
             .addComponent(aiGeminiPanel)
+            .addComponent(aiDeepseekPanel)
+            .addComponent(aiQwenPanel)
             .addLabeledComponent("Temperature (0-2):", aiTemperatureSlider)
             .addLabeledComponent("Max Tokens:", aiMaxTokensField)
         
@@ -219,6 +236,9 @@ class CodeAssistantConfigurable : Configurable {
         azureApiKeyField = JBTextField()
         azureRegionField = JBTextField()
         googleApiKeyField = JBTextField()
+        deepseekApiKeyField = JBTextField()
+        qwenApiKeyField = JBTextField()
+        geminiApiKeyField = JBTextField()
         speedSlider = JSlider(50, 200, 100)
         volumeSlider = JSlider(0, 100, 80)
         
@@ -226,6 +246,9 @@ class CodeAssistantConfigurable : Configurable {
         openaiPanel = createOpenAIPanel()
         azurePanel = createAzurePanel()
         googlePanel = createGooglePanel()
+        deepseekPanel = createDeepSeekPanel()
+        qwenPanel = createQwenPanel()
+        geminiPanel = createGeminiPanel()
         
         // 设置监听器
         providerComboBox.addItemListener { e ->
@@ -244,6 +267,10 @@ class CodeAssistantConfigurable : Configurable {
         aiAzureEndpointField = JBTextField()
         aiClaudeApiKeyField = JBTextField()
         aiGeminiApiKeyField = JBTextField()
+        aiDeepseekApiKeyField = JBTextField()
+        aiDeepseekModelField = JBTextField()
+        aiQwenApiKeyField = JBTextField()
+        aiQwenModelField = JBTextField()
         aiTemperatureSlider = JSlider(0, 200, 70)
         aiMaxTokensField = JBTextField()
         
@@ -252,6 +279,8 @@ class CodeAssistantConfigurable : Configurable {
         aiAzurePanel = createAIAzurePanel()
         aiClaudePanel = createAIClaudePanel()
         aiGeminiPanel = createAIGeminiPanel()
+        aiDeepseekPanel = createAIDeepSeekPanel()
+        aiQwenPanel = createAIQwenPanel()
         
         // 设置监听器
         aiProviderComboBox.addItemListener { e ->
@@ -286,6 +315,33 @@ class CodeAssistantConfigurable : Configurable {
         panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
         val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", googleApiKeyField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createDeepSeekPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("API Key:", deepseekApiKeyField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createQwenPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("API Key:", qwenApiKeyField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createGeminiPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("API Key:", geminiApiKeyField)
         panel.add(formBuilder.panel)
         return panel
     }
@@ -328,11 +384,34 @@ class CodeAssistantConfigurable : Configurable {
         return panel
     }
     
+    private fun createAIDeepSeekPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("API Key:", aiDeepseekApiKeyField)
+            .addLabeledComponent("Model:", aiDeepseekModelField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
+    private fun createAIQwenPanel(): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        val formBuilder = FormBuilder.createFormBuilder()
+            .addLabeledComponent("API Key:", aiQwenApiKeyField)
+            .addLabeledComponent("Model:", aiQwenModelField)
+        panel.add(formBuilder.panel)
+        return panel
+    }
+    
     private fun updatePanelVisibility() {
         val selected = providerComboBox.selectedItem as TTSProvider
         openaiPanel.isVisible = selected == TTSProvider.OPENAI
         azurePanel.isVisible = selected == TTSProvider.AZURE
         googlePanel.isVisible = selected == TTSProvider.GOOGLE
+        deepseekPanel.isVisible = selected == TTSProvider.DEEPSEEK
+        qwenPanel.isVisible = selected == TTSProvider.QWEN
+        geminiPanel.isVisible = selected == TTSProvider.GEMINI
     }
     
     private fun updateAIPanelVisibility() {
@@ -341,6 +420,8 @@ class CodeAssistantConfigurable : Configurable {
         aiAzurePanel.isVisible = selected == AIProvider.AZURE_OPENAI
         aiClaudePanel.isVisible = selected == AIProvider.CLAUDE
         aiGeminiPanel.isVisible = selected == AIProvider.GEMINI
+        aiDeepseekPanel.isVisible = selected == AIProvider.DEEPSEEK
+        aiQwenPanel.isVisible = selected == AIProvider.QWEN
     }
     
     // 代码对话配置相关方法
@@ -416,6 +497,9 @@ class CodeAssistantConfigurable : Configurable {
                azureApiKeyField.text != state.azureApiKey ||
                azureRegionField.text != state.azureRegion ||
                googleApiKeyField.text != state.googleApiKey ||
+               deepseekApiKeyField.text != state.deepseekApiKey ||
+               qwenApiKeyField.text != state.qwenApiKey ||
+               geminiApiKeyField.text != state.geminiApiKey ||
                speedSlider.value != (state.ttsSpeed * 100).toInt() ||
                volumeSlider.value != (state.ttsVolume * 100).toInt()
     }
@@ -429,6 +513,10 @@ class CodeAssistantConfigurable : Configurable {
                aiAzureEndpointField.text != state.aiAzureOpenaiEndpoint ||
                aiClaudeApiKeyField.text != state.aiClaudeApiKey ||
                aiGeminiApiKeyField.text != state.aiGeminiApiKey ||
+               aiDeepseekApiKeyField.text != state.aiDeepseekApiKey ||
+               aiDeepseekModelField.text != state.aiDeepseekModel ||
+               aiQwenApiKeyField.text != state.aiQwenApiKey ||
+               aiQwenModelField.text != state.aiQwenModel ||
                aiTemperatureSlider.value != (state.aiTemperature * 100).toInt() ||
                aiMaxTokensField.text != state.aiMaxTokens.toString()
     }
@@ -467,6 +555,9 @@ class CodeAssistantConfigurable : Configurable {
         state.azureApiKey = azureApiKeyField.text
         state.azureRegion = azureRegionField.text
         state.googleApiKey = googleApiKeyField.text
+        state.deepseekApiKey = deepseekApiKeyField.text
+        state.qwenApiKey = qwenApiKeyField.text
+        state.geminiApiKey = geminiApiKeyField.text
         state.ttsSpeed = speedSlider.value / 100.0f
         state.ttsVolume = volumeSlider.value / 100.0f
     }
@@ -480,6 +571,10 @@ class CodeAssistantConfigurable : Configurable {
         state.aiAzureOpenaiEndpoint = aiAzureEndpointField.text
         state.aiClaudeApiKey = aiClaudeApiKeyField.text
         state.aiGeminiApiKey = aiGeminiApiKeyField.text
+        state.aiDeepseekApiKey = aiDeepseekApiKeyField.text
+        state.aiDeepseekModel = aiDeepseekModelField.text
+        state.aiQwenApiKey = aiQwenApiKeyField.text
+        state.aiQwenModel = aiQwenModelField.text
         state.aiTemperature = aiTemperatureSlider.value / 100.0f
         state.aiMaxTokens = aiMaxTokensField.text.toIntOrNull() ?: state.aiMaxTokens
     }
@@ -525,6 +620,9 @@ class CodeAssistantConfigurable : Configurable {
         azureApiKeyField.text = state.azureApiKey
         azureRegionField.text = state.azureRegion
         googleApiKeyField.text = state.googleApiKey
+        deepseekApiKeyField.text = state.deepseekApiKey
+        qwenApiKeyField.text = state.qwenApiKey
+        geminiApiKeyField.text = state.geminiApiKey
         speedSlider.value = (state.ttsSpeed * 100).toInt()
         volumeSlider.value = (state.ttsVolume * 100).toInt()
     }
@@ -538,6 +636,10 @@ class CodeAssistantConfigurable : Configurable {
         aiAzureEndpointField.text = state.aiAzureOpenaiEndpoint
         aiClaudeApiKeyField.text = state.aiClaudeApiKey
         aiGeminiApiKeyField.text = state.aiGeminiApiKey
+        aiDeepseekApiKeyField.text = state.aiDeepseekApiKey
+        aiDeepseekModelField.text = state.aiDeepseekModel
+        aiQwenApiKeyField.text = state.aiQwenApiKey
+        aiQwenModelField.text = state.aiQwenModel
         aiTemperatureSlider.value = (state.aiTemperature * 100).toInt()
         aiMaxTokensField.text = state.aiMaxTokens.toString()
     }
