@@ -13,8 +13,7 @@
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
     <description><![CDATA[
-        代码助手插件，提供代码翻译、解释和智能问答功能<br>
-        <em>Code Assistant Plugin with Translation, Explanation and AI Chat features</em>
+        Code Assistant enhances IntelliJ with AI‑powered code translation, explanation, and interactive chat. It supports OpenAI, DeepSeek, Qwen, and Gemini providers, offers line‑by‑line replacements, session history, and deep analysis to help you understand and refactor code faster.
     ]]></description>
 
     <!-- Product and plugin compatibility requirements.
