@@ -25,7 +25,7 @@ class SessionHistoryDialog(
     
     private lateinit var sessionList: JBList<ChatSession>
     private lateinit var sessionListModel: DefaultListModel<ChatSession>
-    private val sessionManager = SessionManager.getInstance()
+    private val sessionManager = SessionManager.getInstance(project)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm")
     
     init {
