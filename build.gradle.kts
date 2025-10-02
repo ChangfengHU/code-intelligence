@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.vyibc"
-version = "1.0.1"
+version = "1.0.3"
 
 repositories {
     mavenCentral()
@@ -22,7 +22,6 @@ dependencies {
 intellij {
     version.set("2023.2.5")
     type.set("IC")
-    plugins.set(listOf("java"))
     
     pluginName.set("Code Assistant")
     updateSinceUntilBuild.set(false)

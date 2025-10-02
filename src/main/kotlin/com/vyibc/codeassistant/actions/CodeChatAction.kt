@@ -8,8 +8,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiClass
-import com.intellij.psi.util.PsiTreeUtil
 import com.vyibc.codeassistant.chat.service.PSIContextAnalyzer
 import com.vyibc.codeassistant.chat.service.SessionManager
 import com.vyibc.codeassistant.chat.settings.CodeChatSettings
@@ -34,33 +32,30 @@ class CodeChatAction : AnAction("问答助手") {
             selectionModel.selectionEnd
         )
         
-        // 获取类名
-        val className = getClassName(psiFile, selectionRange)
-        if (className == null) {
+        // 分析代码上下文
+        val contextAnalyzer = PSIContextAnalyzer.getInstance()
+        val codeContext = contextAnalyzer.analyzeContext(psiFile, selectionRange)
+
+        val className = codeContext.className.ifBlank { deriveIdentifier(psiFile) }
+        if (className.isBlank()) {
             Messages.showWarningDialog(
-                "无法确定当前文件的标识符，请查看控制台错误信息", 
+                "无法确定当前文件的标识符，请确认文件已保存", 
                 "提示"
             )
             return
         }
         
-        // 分析代码上下文
-        val contextAnalyzer = PSIContextAnalyzer.getInstance()
-        val codeContext = contextAnalyzer.analyzeContext(psiFile, selectionRange)
-        
         // 获取或创建会话
         val sessionManager = SessionManager.getInstance(project)
-        val session = sessionManager.getOrCreateSession(className, psiFile.virtualFile.path)
+        val filePath = psiFile.virtualFile?.path ?: psiFile.name
+        val session = sessionManager.getOrCreateSession(className, filePath)
 
         // 如果没有选择代码，构建空上下文（允许用户直接问答）
         val actualContext = if (selectedText.isNullOrBlank()) {
-            com.vyibc.codeassistant.chat.model.CodeContext(
+            codeContext.copy(
                 selectedCode = "",
                 selectedRange = TextRange(0, 0),
-                className = className,
-                methodName = null,
-                classContext = psiFile.text.take(2000),
-                imports = emptyList()
+                classContext = limitFileContext(psiFile)
             )
         } else codeContext
         
@@ -86,43 +81,25 @@ class CodeChatAction : AnAction("问答助手") {
         }
     }
     
-    private fun getClassName(psiFile: PsiFile, selectionRange: TextRange): String? {
-        // 对于Java/Kotlin文件，使用PSI查找类名
-        if (psiFile.name.endsWith(".java") || psiFile.name.endsWith(".kt")) {
-            val selectedElement = psiFile.findElementAt(selectionRange.startOffset)
-            val psiClass = PsiTreeUtil.getParentOfType(selectedElement, PsiClass::class.java)
-            return psiClass?.qualifiedName
+    private fun deriveIdentifier(psiFile: PsiFile): String {
+        val virtualFile = psiFile.virtualFile
+        if (virtualFile != null) {
+            val nameWithoutExtension = virtualFile.nameWithoutExtension
+            if (nameWithoutExtension.isNotBlank()) {
+                return nameWithoutExtension
+            }
+            return virtualFile.path
         }
-        
-        // 对于其他文件类型，使用文件路径生成唯一标识
         val fileName = psiFile.name
-        val extension = fileName.substringAfterLast('.', "")
-        val baseName = fileName.substringBeforeLast('.')
-        
-        // 尝试从文件内容中提取类名或函数名（简单的正则匹配）
-        val fileText = psiFile.text
-        val className = when (extension) {
-            "py" -> {
-                // Python: class ClassName:
-                Regex("class\\s+(\\w+)\\s*[:(]").find(fileText)?.groupValues?.get(1)
-            }
-            "js", "ts" -> {
-                // JavaScript/TypeScript: class ClassName 或 function ClassName
-                Regex("(class|function)\\s+(\\w+)").find(fileText)?.groupValues?.get(2)
-            }
-            "go" -> {
-                // Go: type StructName struct 或 func FuncName
-                val structMatch = Regex("type\\s+(\\w+)\\s+struct").find(fileText)
-                val funcMatch = Regex("func\\s+(\\w+)").find(fileText)
-                structMatch?.groupValues?.get(1) ?: funcMatch?.groupValues?.get(1)
-            }
-            "cpp", "c", "h", "hpp" -> {
-                // C++: class ClassName 或 struct ClassName
-                Regex("(class|struct)\\s+(\\w+)").find(fileText)?.groupValues?.get(2)
-            }
-            else -> null
+        val fallback = fileName.substringBeforeLast('.', fileName)
+        return fallback.ifBlank { fileName }
+    }
+
+    private fun limitFileContext(psiFile: PsiFile): String {
+        val text = psiFile.text
+        if (text.length <= 3000) {
+            return text
         }
-        
-        return className ?: "$baseName($extension)"
+        return text.take(3000) + "\n... (文件内容过长，已截断)"
     }
 }
