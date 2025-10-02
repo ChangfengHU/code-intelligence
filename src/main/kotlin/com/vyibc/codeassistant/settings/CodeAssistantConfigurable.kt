@@ -39,6 +39,7 @@ class CodeAssistantConfigurable : Configurable {
     private lateinit var aiAzureEndpointField: JBTextField
     private lateinit var aiClaudeApiKeyField: JBTextField
     private lateinit var aiGeminiApiKeyField: JBTextField
+    private lateinit var aiGeminiModelField: JBTextField
     private lateinit var aiDeepseekApiKeyField: JBTextField
     private lateinit var aiDeepseekModelField: JBTextField
     private lateinit var aiQwenApiKeyField: JBTextField
@@ -267,6 +268,7 @@ class CodeAssistantConfigurable : Configurable {
         aiAzureEndpointField = JBTextField()
         aiClaudeApiKeyField = JBTextField()
         aiGeminiApiKeyField = JBTextField()
+        aiGeminiModelField = JBTextField()
         aiDeepseekApiKeyField = JBTextField()
         aiDeepseekModelField = JBTextField()
         aiQwenApiKeyField = JBTextField()
@@ -380,6 +382,7 @@ class CodeAssistantConfigurable : Configurable {
         panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
         val formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent("API Key:", aiGeminiApiKeyField)
+            .addLabeledComponent("Model:", aiGeminiModelField)
         panel.add(formBuilder.panel)
         return panel
     }
@@ -513,6 +516,7 @@ class CodeAssistantConfigurable : Configurable {
                aiAzureEndpointField.text != state.aiAzureOpenaiEndpoint ||
                aiClaudeApiKeyField.text != state.aiClaudeApiKey ||
                aiGeminiApiKeyField.text != state.aiGeminiApiKey ||
+               aiGeminiModelField.text != state.aiGeminiModel ||
                aiDeepseekApiKeyField.text != state.aiDeepseekApiKey ||
                aiDeepseekModelField.text != state.aiDeepseekModel ||
                aiQwenApiKeyField.text != state.aiQwenApiKey ||
@@ -571,6 +575,7 @@ class CodeAssistantConfigurable : Configurable {
         state.aiAzureOpenaiEndpoint = aiAzureEndpointField.text
         state.aiClaudeApiKey = aiClaudeApiKeyField.text
         state.aiGeminiApiKey = aiGeminiApiKeyField.text
+        state.aiGeminiModel = aiGeminiModelField.text
         state.aiDeepseekApiKey = aiDeepseekApiKeyField.text
         state.aiDeepseekModel = aiDeepseekModelField.text
         state.aiQwenApiKey = aiQwenApiKeyField.text
@@ -636,6 +641,7 @@ class CodeAssistantConfigurable : Configurable {
         aiAzureEndpointField.text = state.aiAzureOpenaiEndpoint
         aiClaudeApiKeyField.text = state.aiClaudeApiKey
         aiGeminiApiKeyField.text = state.aiGeminiApiKey
+        aiGeminiModelField.text = state.aiGeminiModel
         aiDeepseekApiKeyField.text = state.aiDeepseekApiKey
         aiDeepseekModelField.text = state.aiDeepseekModel
         aiQwenApiKeyField.text = state.aiQwenApiKey

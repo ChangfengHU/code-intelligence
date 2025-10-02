@@ -34,6 +34,7 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         var aiAzureOpenaiEndpoint: String = "",
         var aiClaudeApiKey: String = "",
         var aiGeminiApiKey: String = "",
+        var aiGeminiModel: String = "gemini-1.5-pro",
         var aiDeepseekApiKey: String = "",
         var aiDeepseekModel: String = "deepseek-chat",
         var aiQwenApiKey: String = "",
@@ -89,6 +90,7 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
             azureOpenaiEndpoint = myState.aiAzureOpenaiEndpoint,
             claudeApiKey = myState.aiClaudeApiKey,
             geminiApiKey = myState.aiGeminiApiKey,
+            geminiModel = myState.aiGeminiModel,
             deepseekApiKey = myState.aiDeepseekApiKey,
             deepseekModel = myState.aiDeepseekModel,
             qwenApiKey = myState.aiQwenApiKey,
@@ -106,6 +108,7 @@ class CodeAssistantSettings : PersistentStateComponent<CodeAssistantSettings.Sta
         myState.aiAzureOpenaiEndpoint = config.azureOpenaiEndpoint
         myState.aiClaudeApiKey = config.claudeApiKey
         myState.aiGeminiApiKey = config.geminiApiKey
+        myState.aiGeminiModel = config.geminiModel
         myState.aiDeepseekApiKey = config.deepseekApiKey
         myState.aiDeepseekModel = config.deepseekModel
         myState.aiQwenApiKey = config.qwenApiKey

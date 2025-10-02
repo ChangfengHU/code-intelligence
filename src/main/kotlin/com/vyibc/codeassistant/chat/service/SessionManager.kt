@@ -15,10 +15,16 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Service(Service.Level.PROJECT)
 class SessionManager {
-    private val persistence = com.intellij.openapi.components.service<ChatPersistence>()
-    
-    private val sessions = ConcurrentHashMap<String, ChatSession>()
+    private val persistence = service<ChatPersistence>()
     private val chatConfig = CodeChatSettings.getInstance().state
+    private val sessions = ConcurrentHashMap<String, ChatSession>()
+
+    init {
+        val persisted = persistence.loadSessions(chatConfig.maxMessagesPerSession)
+        persisted.forEach { session ->
+            sessions[session.className] = session
+        }
+    }
     
     /**
      * 获取或创建会话（基于类全限定路径）
@@ -26,9 +32,9 @@ class SessionManager {
     fun getOrCreateSession(className: String, filePath: String): ChatSession {
         // 使用类全限定路径作为会话标识
         val sessionKey = className
-        
+
         // 查找现有会话
-        val existingSession = sessions.values.find { it.className == sessionKey }
+        val existingSession = sessions[sessionKey]
         if (existingSession != null) {
             existingSession.lastActiveAt = System.currentTimeMillis()
             return existingSession
@@ -44,7 +50,8 @@ class SessionManager {
             filePath = filePath
         )
         
-        sessions[newSession.id] = newSession
+        sessions[sessionKey] = newSession
+        persistence.saveOrUpdate(newSession, chatConfig.maxMessagesPerSession)
         return newSession
     }
     
@@ -63,14 +70,19 @@ class SessionManager {
         }
         
         session.lastActiveAt = System.currentTimeMillis()
-        sessions[session.id] = session
+        sessions[session.className] = session
+        persistence.saveOrUpdate(session, chatConfig.maxMessagesPerSession)
     }
     
     /**
      * 获取会话
      */
     fun getSession(sessionId: String): ChatSession? {
-        return sessions[sessionId]
+        return sessions.values.find { it.id == sessionId }
+    }
+
+    fun findSessionByClassName(className: String): ChatSession? {
+        return sessions[className]
     }
     
     /**
@@ -84,7 +96,10 @@ class SessionManager {
      * 删除会话
      */
     fun deleteSession(sessionId: String): Boolean {
-        return sessions.remove(sessionId) != null
+        val entry = sessions.entries.find { it.value.id == sessionId } ?: return false
+        sessions.remove(entry.key)
+        persistence.deleteById(sessionId)
+        return true
     }
     
     /**
@@ -92,10 +107,15 @@ class SessionManager {
      */
     private fun cleanupOldSessions() {
         val sortedSessions = sessions.values.sortedBy { it.lastActiveAt }
-        val sessionsToRemove = sortedSessions.take(sessions.size - chatConfig.maxSessions + 10)
-        
+        val excess = sessions.size - chatConfig.maxSessions
+        if (excess <= 0) {
+            return
+        }
+        val sessionsToRemove = sortedSessions.take(excess)
+
         sessionsToRemove.forEach { session ->
-            sessions.remove(session.id)
+            sessions.remove(session.className)
+            persistence.deleteById(session.id)
         }
         
         println("清理了 ${sessionsToRemove.size} 个旧会话，当前会话数: ${sessions.size}")
@@ -105,7 +125,7 @@ class SessionManager {
      * 清理会话中的旧消息
      */
     fun cleanupOldMessages(sessionId: String) {
-        val session = sessions[sessionId] ?: return
+        val session = sessions.values.find { it.id == sessionId } ?: return
         
         if (session.messages.size > chatConfig.maxMessagesPerSession) {
             val messagesToKeep = session.messages.takeLast(chatConfig.maxMessagesPerSession)
@@ -150,7 +170,7 @@ class SessionManager {
      * 获取会话的对话历史（用于传递给AI）
      */
     fun getConversationHistory(sessionId: String, maxMessages: Int = 10): List<ChatMessage> {
-        val session = sessions[sessionId] ?: return emptyList()
+        val session = sessions.values.find { it.id == sessionId } ?: return emptyList()
         
         // 只获取用户和助手的消息，排除系统消息
         val conversationMessages = session.messages.filter { 

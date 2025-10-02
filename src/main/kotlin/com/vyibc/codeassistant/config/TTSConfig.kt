@@ -49,6 +49,7 @@ data class AIConfig(
     var azureOpenaiEndpoint: String = "",
     var claudeApiKey: String = "",
     var geminiApiKey: String = "",
+    var geminiModel: String = "gemini-1.5-pro",
     var deepseekApiKey: String = "",
     var deepseekModel: String = "deepseek-chat",
     var qwenApiKey: String = "",
