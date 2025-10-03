@@ -102,7 +102,7 @@ class SessionHistoryDialog(
                     imports = emptyList()
                 )
                 
-                val dialog = CodeChatDialog(project, selectedSession, emptyContext)
+                val dialog = CodeChatDialog(project, selectedSession, emptyContext, false)
                 dialog.show()
             }
         }

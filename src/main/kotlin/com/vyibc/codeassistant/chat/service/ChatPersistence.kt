@@ -8,6 +8,7 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 import com.vyibc.codeassistant.chat.model.ChatMessage
 import com.vyibc.codeassistant.chat.model.ChatSession
 import com.vyibc.codeassistant.chat.model.MessageType
+import com.vyibc.codeassistant.chat.model.SessionCodeSnapshot
 
 @State(name = "CodeChatPersistence", storages = [Storage("CodeChatSessions.xml")])
 @Service
@@ -25,7 +26,11 @@ class ChatPersistence : PersistentStateComponent<ChatPersistence.State> {
         var filePath: String = "",
         var createdAt: Long = System.currentTimeMillis(),
         var lastActiveAt: Long = System.currentTimeMillis(),
-        var messages: MutableList<PersistentMessage> = mutableListOf()
+        var messages: MutableList<PersistentMessage> = mutableListOf(),
+        var lastSelectedCode: String? = null,
+        var lastSelectionStart: Int? = null,
+        var lastSelectionEnd: Int? = null,
+        var lastMethodName: String? = null
     )
 
     class State {
@@ -42,6 +47,17 @@ class ChatPersistence : PersistentStateComponent<ChatPersistence.State> {
 
     fun loadSessions(maxMessages: Int): List<ChatSession> {
         return myState.sessions.map { ps ->
+            val lastSnapshot = ps.lastSelectedCode?.takeIf { it.isNotBlank() }?.let {
+                SessionCodeSnapshot(
+                    filePath = ps.filePath,
+                    className = ps.className,
+                    methodName = ps.lastMethodName,
+                    selectedCode = it,
+                    selectionStart = ps.lastSelectionStart ?: 0,
+                    selectionEnd = ps.lastSelectionEnd ?: 0
+                )
+            }
+
             ChatSession(
                 id = ps.id,
                 className = ps.className,
@@ -54,7 +70,8 @@ class ChatPersistence : PersistentStateComponent<ChatPersistence.State> {
                         content = pm.content,
                         timestamp = pm.timestamp
                     )
-                }.toMutableList()
+                }.toMutableList(),
+                lastCodeSnapshot = lastSnapshot
             )
         }
     }
@@ -69,6 +86,17 @@ class ChatPersistence : PersistentStateComponent<ChatPersistence.State> {
         target.messages = session.messages.takeLast(maxMessages).map {
             PersistentMessage(type = it.type.name, content = it.content, timestamp = it.timestamp)
         }.toMutableList()
+        session.lastCodeSnapshot?.let { snapshot ->
+            target.lastSelectedCode = snapshot.selectedCode
+            target.lastSelectionStart = snapshot.selectionStart
+            target.lastSelectionEnd = snapshot.selectionEnd
+            target.lastMethodName = snapshot.methodName
+        } ?: run {
+            target.lastSelectedCode = null
+            target.lastSelectionStart = null
+            target.lastSelectionEnd = null
+            target.lastMethodName = null
+        }
     }
 
     fun deleteById(sessionId: String) {

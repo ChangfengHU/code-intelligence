@@ -8,6 +8,7 @@ import com.vyibc.codeassistant.chat.model.ChatMessage
 import com.vyibc.codeassistant.chat.model.ChatSession
 import com.vyibc.codeassistant.chat.model.CodeContext
 import com.vyibc.codeassistant.chat.model.MessageType
+import com.vyibc.codeassistant.chat.model.SessionCodeSnapshot
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -53,6 +54,33 @@ class SessionManager {
         sessions[sessionKey] = newSession
         persistence.saveOrUpdate(newSession, chatConfig.maxMessagesPerSession)
         return newSession
+    }
+
+    /**
+     * 更新会话的最新代码选区
+     * @return true 表示检测到新的选区并已保存
+     */
+    fun updateSessionCodeSnapshot(session: ChatSession, context: CodeContext): Boolean {
+        if (context.selectedCode.isBlank()) {
+            return false
+        }
+
+        val trimmed = context.selectedCode.trimEnd()
+        val snapshot = SessionCodeSnapshot(
+            filePath = session.filePath,
+            className = context.className.ifBlank { session.className },
+            methodName = context.methodName,
+            selectedCode = trimmed,
+            selectionStart = context.selectedRange.startOffset,
+            selectionEnd = context.selectedRange.endOffset
+        )
+
+        val changed = session.lastCodeSnapshot != snapshot
+        if (changed) {
+            session.lastCodeSnapshot = snapshot
+            saveSession(session)
+        }
+        return changed
     }
     
     /**

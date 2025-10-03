@@ -11,7 +11,6 @@ import com.vyibc.codeassistant.chat.model.CodeContext
 import com.vyibc.codeassistant.chat.model.MessageType
 import com.vyibc.codeassistant.chat.settings.CodeChatSettings
 import com.vyibc.codeassistant.config.AIProvider
-import com.vyibc.codeassistant.settings.CodeAssistantSettings
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,17 +29,15 @@ class AIConversationService {
         .writeTimeout(90, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .build()
-
-    private val settings = CodeAssistantSettings.getInstance()
     private val chatSettings = CodeChatSettings.getInstance()
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
     suspend fun sendMessage(
         message: String,
-        codeContext: CodeContext,
+        codeContext: CodeContext?,
         conversationHistory: List<ChatMessage>
     ): String {
-        val aiConfig = settings.getAIConfig()
+        val aiConfig = chatSettings.getModelConfig()
         val payload = buildConversationPayload(message, codeContext, conversationHistory)
         val provider = aiConfig.provider
 
@@ -216,7 +213,7 @@ class AIConversationService {
 
     private fun buildConversationPayload(
         message: String,
-        codeContext: CodeContext,
+        codeContext: CodeContext?,
         conversationHistory: List<ChatMessage>
     ): ConversationPayload {
         val systemMessages = mutableListOf<String>()
@@ -227,8 +224,8 @@ class AIConversationService {
             systemMessages += basePrompt
         }
 
-        if (codeContext.selectedCode.isNotBlank()) {
-            systemMessages += buildContextPrompt(codeContext)
+        codeContext?.takeIf { it.selectedCode.isNotBlank() }?.let {
+            systemMessages += buildContextPrompt(it)
         }
 
         conversationHistory.forEach { history ->

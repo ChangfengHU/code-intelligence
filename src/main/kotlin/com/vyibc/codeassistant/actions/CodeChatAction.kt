@@ -60,8 +60,10 @@ class CodeChatAction : AnAction("问答助手") {
         } else codeContext
         
         // 显示对话框
+        val hasNewSelection = sessionManager.updateSessionCodeSnapshot(session, actualContext)
+
         ApplicationManager.getApplication().invokeLater {
-            val dialog = CodeChatDialog(project, session, actualContext)
+            val dialog = CodeChatDialog(project, session, actualContext, hasNewSelection)
             dialog.show()
         }
     }

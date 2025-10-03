@@ -2,6 +2,8 @@ package com.vyibc.codeassistant.chat.settings
 
 import com.intellij.openapi.components.*
 import com.intellij.util.xmlb.XmlSerializerUtil
+import com.vyibc.codeassistant.config.AIConfig
+import com.vyibc.codeassistant.config.AIProvider
 
 /**
  * 代码对话设置
@@ -20,6 +22,15 @@ class CodeChatSettings : PersistentStateComponent<CodeChatSettings.State> {
         // AI配置
         var maxTokens: Int = 4000,
         var temperature: Double = 0.3,
+        var modelProvider: String = AIProvider.OPENAI.name,
+        var modelOpenaiApiKey: String = "",
+        var modelOpenaiModel: String = "gpt-3.5-turbo",
+        var modelDeepseekApiKey: String = "",
+        var modelDeepseekModel: String = "deepseek-chat",
+        var modelGeminiApiKey: String = "",
+        var modelGeminiModel: String = "gemini-1.5-pro",
+        var modelQwenApiKey: String = "",
+        var modelQwenModel: String = "qwen-turbo",
         
         // 会话管理配置
         var maxSessions: Int = 100,
@@ -45,7 +56,27 @@ class CodeChatSettings : PersistentStateComponent<CodeChatSettings.State> {
     override fun loadState(state: State) {
         XmlSerializerUtil.copyBean(state, myState)
     }
-    
+
+    fun getModelConfig(): AIConfig {
+        val state = myState
+        return AIConfig(
+            provider = AIProvider.valueOf(state.modelProvider),
+            openaiApiKey = state.modelOpenaiApiKey,
+            openaiModel = state.modelOpenaiModel,
+            azureOpenaiApiKey = "",
+            azureOpenaiEndpoint = "",
+            claudeApiKey = "",
+            geminiApiKey = state.modelGeminiApiKey,
+            geminiModel = state.modelGeminiModel,
+            deepseekApiKey = state.modelDeepseekApiKey,
+            deepseekModel = state.modelDeepseekModel,
+            qwenApiKey = state.modelQwenApiKey,
+            qwenModel = state.modelQwenModel,
+            temperature = state.temperature.toFloat(),
+            maxTokens = state.maxTokens
+        )
+    }
+
     companion object {
         fun getInstance(): CodeChatSettings = service()
         

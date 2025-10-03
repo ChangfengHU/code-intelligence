@@ -7,7 +7,10 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.FormBuilder
+import com.vyibc.codeassistant.config.AIProvider
 import java.awt.BorderLayout
+import java.awt.CardLayout
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
@@ -24,6 +27,17 @@ class CodeChatConfigurable : Configurable {
     private lateinit var systemPromptArea: JBTextArea
     private lateinit var maxTokensField: JBTextField
     private lateinit var temperatureField: JBTextField
+    private lateinit var modelProviderCombo: JComboBox<AIProvider>
+    private lateinit var modelOpenaiApiKeyField: JBTextField
+    private lateinit var modelOpenaiModelField: JBTextField
+    private lateinit var modelDeepseekApiKeyField: JBTextField
+    private lateinit var modelDeepseekModelField: JBTextField
+    private lateinit var modelGeminiApiKeyField: JBTextField
+    private lateinit var modelGeminiModelField: JBTextField
+    private lateinit var modelQwenApiKeyField: JBTextField
+    private lateinit var modelQwenModelField: JBTextField
+    private lateinit var modelCardPanel: JPanel
+    private lateinit var modelCardLayout: CardLayout
     private lateinit var maxSessionsField: JBTextField
     private lateinit var maxMessagesField: JBTextField
     private lateinit var autoSaveField: JBTextField
@@ -66,7 +80,36 @@ class CodeChatConfigurable : Configurable {
             
             addLabelAndField(mainPanel, gbc, row++, "Temperature (0.0-2.0):", 
                 JBTextField().also { temperatureField = it })
-            
+
+            addSectionTitle(mainPanel, gbc, row++, "模型配置")
+
+            addLabelAndComponent(mainPanel, gbc, row, "模型提供商:",
+                JComboBox(arrayOf(
+                    AIProvider.OPENAI,
+                    AIProvider.GEMINI,
+                    AIProvider.DEEPSEEK,
+                    AIProvider.QWEN
+                )).also { modelProviderCombo = it })
+            row++
+
+            modelCardLayout = CardLayout()
+            modelCardPanel = JPanel(modelCardLayout).apply {
+                isOpaque = false
+                border = JBUI.Borders.empty(0, 16, 16, 0)
+                add(createModelOpenAIForm(), AIProvider.OPENAI.name)
+                add(createModelGeminiForm(), AIProvider.GEMINI.name)
+                add(createModelDeepSeekForm(), AIProvider.DEEPSEEK.name)
+                add(createModelQwenForm(), AIProvider.QWEN.name)
+            }
+
+            gbc.gridy = row
+            gbc.gridx = 0
+            gbc.gridwidth = 2
+            gbc.weightx = 1.0
+            gbc.fill = GridBagConstraints.HORIZONTAL
+            mainPanel.add(modelCardPanel, gbc)
+            row++
+
             // 会话管理部分
             addSectionTitle(mainPanel, gbc, row++, "会话管理")
             
@@ -115,15 +158,17 @@ class CodeChatConfigurable : Configurable {
             val resetButton = JButton("恢复默认设置")
             resetButton.addActionListener { resetToDefaults() }
             mainPanel.add(resetButton, gbc)
-            
+
             val scrollPane = JScrollPane(mainPanel)
             scrollPane.border = null
             panel!!.add(scrollPane, BorderLayout.CENTER)
+
+            modelProviderCombo.addActionListener { updateModelPanelVisibility() }
         }
-        
+
         return panel!!
     }
-    
+
     private fun addSectionTitle(panel: JPanel, gbc: GridBagConstraints, row: Int, title: String) {
         gbc.gridy = row
         gbc.gridx = 0
@@ -149,6 +194,22 @@ class CodeChatConfigurable : Configurable {
         gbc.weightx = 1.0
         gbc.fill = GridBagConstraints.HORIZONTAL
         panel.add(field, gbc)
+    }
+
+    private fun addLabelAndComponent(panel: JPanel, gbc: GridBagConstraints, row: Int,
+                                     labelText: String, component: JComponent) {
+        gbc.gridy = row
+        gbc.gridwidth = 1
+
+        gbc.gridx = 0
+        gbc.weightx = 0.0
+        gbc.fill = GridBagConstraints.NONE
+        panel.add(JBLabel(labelText), gbc)
+
+        gbc.gridx = 1
+        gbc.weightx = 1.0
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        panel.add(component, gbc)
     }
     
     private fun addLabelAndTextArea(panel: JPanel, gbc: GridBagConstraints, row: Int, 
@@ -186,6 +247,15 @@ class CodeChatConfigurable : Configurable {
         return systemPromptArea.text != state.systemPrompt ||
                 maxTokensField.text != state.maxTokens.toString() ||
                 temperatureField.text != state.temperature.toString() ||
+                (modelProviderCombo.selectedItem as AIProvider).name != state.modelProvider ||
+                modelOpenaiApiKeyField.text != state.modelOpenaiApiKey ||
+                modelOpenaiModelField.text != state.modelOpenaiModel ||
+                modelDeepseekApiKeyField.text != state.modelDeepseekApiKey ||
+                modelDeepseekModelField.text != state.modelDeepseekModel ||
+                modelGeminiApiKeyField.text != state.modelGeminiApiKey ||
+                modelGeminiModelField.text != state.modelGeminiModel ||
+                modelQwenApiKeyField.text != state.modelQwenApiKey ||
+                modelQwenModelField.text != state.modelQwenModel ||
                 maxSessionsField.text != state.maxSessions.toString() ||
                 maxMessagesField.text != state.maxMessagesPerSession.toString() ||
                 autoSaveField.text != state.autoSaveInterval.toString() ||
@@ -204,6 +274,15 @@ class CodeChatConfigurable : Configurable {
             state.systemPrompt = systemPromptArea.text
             state.maxTokens = maxTokensField.text.toIntOrNull() ?: state.maxTokens
             state.temperature = temperatureField.text.toDoubleOrNull() ?: state.temperature
+            state.modelProvider = (modelProviderCombo.selectedItem as AIProvider).name
+            state.modelOpenaiApiKey = modelOpenaiApiKeyField.text
+            state.modelOpenaiModel = modelOpenaiModelField.text
+            state.modelDeepseekApiKey = modelDeepseekApiKeyField.text
+            state.modelDeepseekModel = modelDeepseekModelField.text
+            state.modelGeminiApiKey = modelGeminiApiKeyField.text
+            state.modelGeminiModel = modelGeminiModelField.text
+            state.modelQwenApiKey = modelQwenApiKeyField.text
+            state.modelQwenModel = modelQwenModelField.text
             state.maxSessions = maxSessionsField.text.toIntOrNull() ?: state.maxSessions
             state.maxMessagesPerSession = maxMessagesField.text.toIntOrNull() ?: state.maxMessagesPerSession
             state.autoSaveInterval = autoSaveField.text.toIntOrNull() ?: state.autoSaveInterval
@@ -224,6 +303,15 @@ class CodeChatConfigurable : Configurable {
         systemPromptArea.text = state.systemPrompt
         maxTokensField.text = state.maxTokens.toString()
         temperatureField.text = state.temperature.toString()
+        modelProviderCombo.selectedItem = AIProvider.valueOf(state.modelProvider)
+        modelOpenaiApiKeyField.text = state.modelOpenaiApiKey
+        modelOpenaiModelField.text = state.modelOpenaiModel
+        modelDeepseekApiKeyField.text = state.modelDeepseekApiKey
+        modelDeepseekModelField.text = state.modelDeepseekModel
+        modelGeminiApiKeyField.text = state.modelGeminiApiKey
+        modelGeminiModelField.text = state.modelGeminiModel
+        modelQwenApiKeyField.text = state.modelQwenApiKey
+        modelQwenModelField.text = state.modelQwenModel
         maxSessionsField.text = state.maxSessions.toString()
         maxMessagesField.text = state.maxMessagesPerSession.toString()
         autoSaveField.text = state.autoSaveInterval.toString()
@@ -234,13 +322,24 @@ class CodeChatConfigurable : Configurable {
         showHistoryCheck.isSelected = state.showHistoryOnStart
         showAIInteractionCheck.isSelected = state.showAIInteraction
         enableDebugCheck.isSelected = state.enableDebugMode
+
+        updateModelPanelVisibility()
     }
-    
+
     private fun resetToDefaults() {
         val defaultState = CodeChatSettings.State()
         systemPromptArea.text = defaultState.systemPrompt
         maxTokensField.text = defaultState.maxTokens.toString()
         temperatureField.text = defaultState.temperature.toString()
+        modelProviderCombo.selectedItem = AIProvider.valueOf(defaultState.modelProvider)
+        modelOpenaiApiKeyField.text = defaultState.modelOpenaiApiKey
+        modelOpenaiModelField.text = defaultState.modelOpenaiModel
+        modelDeepseekApiKeyField.text = defaultState.modelDeepseekApiKey
+        modelDeepseekModelField.text = defaultState.modelDeepseekModel
+        modelGeminiApiKeyField.text = defaultState.modelGeminiApiKey
+        modelGeminiModelField.text = defaultState.modelGeminiModel
+        modelQwenApiKeyField.text = defaultState.modelQwenApiKey
+        modelQwenModelField.text = defaultState.modelQwenModel
         maxSessionsField.text = defaultState.maxSessions.toString()
         maxMessagesField.text = defaultState.maxMessagesPerSession.toString()
         autoSaveField.text = defaultState.autoSaveInterval.toString()
@@ -251,5 +350,33 @@ class CodeChatConfigurable : Configurable {
         showHistoryCheck.isSelected = defaultState.showHistoryOnStart
         showAIInteractionCheck.isSelected = defaultState.showAIInteraction
         enableDebugCheck.isSelected = defaultState.enableDebugMode
+
+        updateModelPanelVisibility()
     }
+
+    private fun updateModelPanelVisibility() {
+        if (!::modelCardLayout.isInitialized) return
+        val provider = modelProviderCombo.selectedItem as? AIProvider ?: return
+        modelCardLayout.show(modelCardPanel, provider.name)
+    }
+
+    private fun createModelOpenAIForm(): JPanel = FormBuilder.createFormBuilder()
+        .addLabeledComponent("API Key:", JBTextField().also { modelOpenaiApiKeyField = it })
+        .addLabeledComponent("模型:", JBTextField().also { modelOpenaiModelField = it })
+        .panel
+
+    private fun createModelDeepSeekForm(): JPanel = FormBuilder.createFormBuilder()
+        .addLabeledComponent("API Key:", JBTextField().also { modelDeepseekApiKeyField = it })
+        .addLabeledComponent("模型:", JBTextField().also { modelDeepseekModelField = it })
+        .panel
+
+    private fun createModelGeminiForm(): JPanel = FormBuilder.createFormBuilder()
+        .addLabeledComponent("API Key:", JBTextField().also { modelGeminiApiKeyField = it })
+        .addLabeledComponent("模型:", JBTextField().also { modelGeminiModelField = it })
+        .panel
+
+    private fun createModelQwenForm(): JPanel = FormBuilder.createFormBuilder()
+        .addLabeledComponent("API Key:", JBTextField().also { modelQwenApiKeyField = it })
+        .addLabeledComponent("模型:", JBTextField().also { modelQwenModelField = it })
+        .panel
 }
